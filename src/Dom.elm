@@ -56,8 +56,8 @@ element tag =
 {-| Set the id attribute on an `Element` record
 -}
 setId : String -> Element msg -> Element msg
-setId id current =
-  { current | id = id }
+setId idString current =
+  { current | id = idString }
 
 
 -- CLASS
@@ -66,8 +66,8 @@ setId id current =
 
 -}
 addClass : String -> Element msg -> Element msg
-addClass class current =
-  { current | classes = class :: current.classes }
+addClass newClass current =
+  { current | classes = [ newClass ] |> List.append current.classes }
 
 
 {-| Add a class name to the current list contained in an `Element` record when
@@ -75,10 +75,10 @@ the boolean argument evaluates to `True`
 
 -}
 addClassConditional : (String, Bool) -> Element msg -> Element msg
-addClassConditional (class, test) =
+addClassConditional (newClass, test) =
   case test of
     True ->
-      addClass class
+      addClass newClass
 
     False ->
       identity
@@ -89,8 +89,8 @@ record
 
 -}
 addClassList : List String -> Element msg -> Element msg
-addClassList classList current =
-  { current | classes = current.classes |> List.append classList }
+addClassList newClassList current =
+  { current | classes = newClassList |> List.append current.classes }
 
 
 {-| Add a list of class names to the current list contained in an `Element`
@@ -98,10 +98,10 @@ record when the boolean argument evaluates to `True`
 
 -}
 addClassListConditional : (List String, Bool) -> Element msg -> Element msg
-addClassListConditional (classList, test) =
+addClassListConditional (newClassList, test) =
   case test of
     True ->
-      addClassList classList
+      addClassList newClassList
 
     False ->
       identity
@@ -121,8 +121,8 @@ record, replacing it a new list of class names
 
 -}
 replaceClassList : List String -> Element msg -> Element msg
-replaceClassList classList current =
-  { current | classes = classList }
+replaceClassList newClassList current =
+  { current | classes = newClassList }
 
 
 -- STYLE
@@ -132,8 +132,8 @@ record
 
 -}
 addStyle : (String, String) -> Element msg -> Element msg
-addStyle style current =
-  { current | styles = style :: current.styles }
+addStyle newStyle current =
+  { current | styles = [ newStyle ] |> List.append current.styles }
 
 
 {-| Add a style key/value pair to the current list contained in an `Element`
@@ -141,10 +141,10 @@ record when the boolean argument evaluates to `True`
 
 -}
 addStyleConditional : ((String, String), Bool) -> Element msg -> Element msg
-addStyleConditional (style, test) =
+addStyleConditional (newStyle, test) =
   case test of
     True ->
-      addStyle style
+      addStyle newStyle
 
     False ->
       identity
