@@ -90,7 +90,7 @@ implementation code in an separate, unexposed module.
 modify : (Internal msg -> Internal msg) -> Element msg -> Element msg
 modify f n =
   case n of
-    Element i -> Element (f i)
+    Element internal -> Element (f internal)
 
 
 -- ID
@@ -169,7 +169,7 @@ record
 -}
 addStyle : (String, String) -> Element msg -> Element msg
 addStyle kv =
-  modify (\n -> { n | styles = List.append n.styles [ kv ] })
+  modify (\n -> { n | styles = List.append n.styles [kv] })
 
 
 {-| Add a style key/value pair to the current list contained in an `Element`
@@ -230,13 +230,16 @@ replaceStyleList lkv =
 ---- event listeners that don't capture an input value
 
 addAction : (String, msg) -> Element msg -> Element msg
-addAction (k, v) =
+addAction (event, msg) =
   let
-    newAction =
-      (k, Handler v False False)
+    handler =
+      { message = msg
+      , stopPropagation = False
+      , preventDefault = False
+      }
 
   in
-    modify (\n -> { n | actions = List.append n.actions [ newAction ] })
+    modify (\n -> { n | actions = List.append n.actions [ (event, handler) ] })
 
 
 addActionConditional : ((String, msg), Bool) -> Element msg -> Element msg
@@ -249,31 +252,40 @@ addActionConditional (kv, test) =
 addActionStopPropagation : (String, msg) -> Element msg -> Element msg
 addActionStopPropagation (k, v) =
   let
-    newAction =
-      (k, Handler v True False)
+    handler =
+      { message = msg
+      , stopPropagation = True
+      , preventDefault = False
+      }
 
   in
-    modify (\n -> { n | actions = List.append n.actions [ newAction ] })
+    modify (\n -> { n | actions = List.append n.actions [ (event, handler) ] })
 
 
 addActionPreventDefault : (String, msg) -> Element msg -> Element msg
 addActionPreventDefault (k, v) =
   let
-    newAction =
-      (k, Handler v False True)
+    handler =
+      { message = msg
+      , stopPropagation = False
+      , preventDefault = True
+      }
 
   in
-    modify (\n -> { n | actions = List.append n.actions [ newAction ] })
+    modify (\n -> { n | actions = List.append n.actions [ (event, handler) ] })
 
 
 addActionStopAndPrevent : (String, msg) -> Element msg -> Element msg
 addActionStopAndPrevent (k, v) =
   let
-    newAction =
-      (k, Handler v True True)
+    handler =
+      { message = msg
+      , stopPropagation = True
+      , preventDefault = True
+      }
 
   in
-    modify (\n -> { n | actions = List.append n.actions [ newAction ] })
+    modify (\n -> { n | actions = List.append n.actions [ (event, handler) ] })
 
 
 removeAction : String -> Element msg -> Element msg
@@ -294,7 +306,7 @@ captureValue (event, receiver) =
   let
     handler =
       Json.Decode.string
-        |> Json.Decode.at [ "target", "value" ]
+        |> Json.Decode.at ["target", "value"]
         |> Json.Decode.map receiver
         |> VirtualDom.Custom
 
@@ -307,7 +319,7 @@ captureChecked (event, receiver) =
   let
     handler =
       Json.Decode.bool
-        |> Json.Decode.at [ "target", "checked" ]
+        |> Json.Decode.at ["target", "checked"]
         |> Json.Decode.map receiver
         |> VirtualDom.Custom
 
@@ -319,65 +331,80 @@ setInputHandler : (String -> msg) -> Element msg -> Element msg
 setInputHandler token =
   let
     receiver string =
-      Handler (token string) True False
+      { message = token string
+      , stopPropagation = True
+      , preventDefault = False
+      }
 
-    newAttribute =
+    eventAttribute =
       captureValue ("input", receiver)
 
   in
-    modify (\n -> { n | attributes = List.append n.attributes [ newAttribute ] })
+    modify (\n -> { n | attributes = List.append n.attributes [eventAttribute] })
 
 
 setInputHandlerWithParser : (a -> msg, String -> a) -> Element msg -> Element msg
 setInputHandlerWithParser (token, parser) =
   let
     receiver string =
-      Handler (string |> parser |> token) True False
+      { message = token (string |> parser)
+      , stopPropagation = True
+      , preventDefault = False
+      }
 
-    newAttribute =
+    eventAttribute =
       captureValue ("input", receiver)
 
   in
-    modify (\n -> { n | attributes = List.append n.attributes [ newAttribute ] })
+    modify (\n -> { n | attributes = List.append n.attributes [eventAttribute] })
 
 
 setChangeHandler : (String -> msg) -> Element msg -> Element msg
 setChangeHandler token =
   let
     receiver string =
-      Handler (token string) False False
+      { message = token string
+      , stopPropagation = False
+      , preventDefault = False
+      }
 
-    newAttribute =
+    eventAttribute =
       captureValue ("change", receiver)
 
   in
-    modify (\n -> { n | attributes = List.append n.attributes [ newAttribute ] })
+    modify (\n -> { n | attributes = List.append n.attributes [eventAttribute] })
 
 
 setChangeHandlerWithParser : (a -> msg, String -> a) -> Element msg -> Element msg
 setChangeHandlerWithParser (token, parser) =
   let
     receiver string =
-      Handler (string |> parser |> token) False False
+      { message = token (string |> parser)
+      , stopPropagation = False
+      , preventDefault = False
+      }
 
-    newAttribute =
+    eventAttribute =
       captureValue ("change", receiver)
 
   in
-    modify (\n -> { n | attributes = List.append n.attributes [ newAttribute ] })
+    modify (\n -> { n | attributes = List.append n.attributes [eventAttribute] })
 
 
 setCheckHandler : (Bool -> msg) -> Element msg -> Element msg
 setCheckHandler token =
   let
     receiver bool =
-      Handler (token bool) False False
+      { message = token bool
+      , stopPropagation = False
+      , preventDefault = False
+      }
 
-    newAttribute =
+    eventAttribute =
       captureChecked ("change", receiver)
 
   in
-    modify (\n -> { n | attributes = List.append n.attributes [ newAttribute ] })
+    modify (\n -> { n | attributes = List.append n.attributes [eventAttribute] })
 
 
 
