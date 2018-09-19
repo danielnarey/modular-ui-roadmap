@@ -12,7 +12,7 @@ module Dom exposing
 
 
 import VirtualDom
-import Json.Decode
+import Json.Decode exposing (Decoder)
 
 import Dom.Internal as Internal
 
@@ -311,7 +311,7 @@ addCheckHandler token =
 
 ---- CUSTOM LISTENERS
 
-addListener : (String, Json.Decode.Decoder msg) -> Element msg -> Element msg
+addListener : (String, Decoder msg) -> Element msg -> Element msg
 addListener (event, decoder) =
   let
     handler =
@@ -321,7 +321,14 @@ addListener (event, decoder) =
     Internal.modify (\n -> { n | listeners = List.append n.listeners [ (event, handler decoder) ] })
 
 
-addListenerStopPropagation : (String, Json.Decode.Decoder msg) -> Element msg -> Element msg
+addListenerConditional : ((String, Decoder msg), Bool) -> Element msg -> Element msg
+addListenerConditional (kv, test) =
+  case test of
+    True -> addListener kv
+    False -> identity
+
+
+addListenerStopPropagation : (String, Decoder msg) -> Element msg -> Element msg
 addListenerStopPropagation (event, decoder) =
   let
     handler =
@@ -332,7 +339,7 @@ addListenerStopPropagation (event, decoder) =
     Internal.modify (\n -> { n | listeners = List.append n.listeners [ (event, handler decoder) ] })
 
 
-addListenerPreventDefault : (String, Json.Decode.Decoder msg) -> Element msg -> Element msg
+addListenerPreventDefault : (String, Decoder msg) -> Element msg -> Element msg
 addListenerPreventDefault (event, decoder) =
   let
     handler =
@@ -343,7 +350,7 @@ addListenerPreventDefault (event, decoder) =
     Internal.modify (\n -> { n | listeners = List.append n.listeners [ (event, handler decoder) ] })
 
 
-addListenerStopAndPrevent : (String, Json.Decode.Decoder msg) -> Element msg -> Element msg
+addListenerStopAndPrevent : (String, Decoder msg) -> Element msg -> Element msg
 addListenerStopAndPrevent (event, decoder) =
   let
     handler =
