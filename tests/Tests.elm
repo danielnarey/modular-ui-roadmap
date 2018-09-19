@@ -3,7 +3,7 @@ module Tests exposing (..)
 import Expect exposing (Expectation)
 import Test exposing (..)
 
-import VirtualDom
+import Dom.Internal
 import Dom
 
 
@@ -201,32 +201,16 @@ modifierTests =
 
 -- Helpers
 
-{-| Copy of `Internal` type for testing
--}
-type alias Internal msg =
-  { tag : String
-  , id : String
-  , classes : List String
-  , styles : List (String, String)
-  , actions: List (String, msg)
-  , attributes : List (VirtualDom.Attribute msg)
-  , text : String
-  , children : List (VirtualDom.Node msg)
-  , namespace : String
-  , keys : List String
-  }
-
-
 {-| Construct an internal record for testing
 -}
-internal : String -> Internal msg
+internal : String -> Dom.Internal.Data msg
 internal tag =
   { tag = tag
   , id = ""
   , classes = []
   , styles = []
-  , actions = []
   , attributes = []
+  , listeners = []
   , text = ""
   , children = []
   , namespace = ""
@@ -236,6 +220,6 @@ internal tag =
 
 {-| Construct an empty div for testing
 -}
-div : Internal msg
+div : Dom.Internal.Data msg
 div =
   internal "div"

@@ -14,6 +14,8 @@ module Dom exposing
 import VirtualDom
 import Json.Decode
 
+import Dom.Internal as Internal
+
 
 {-| A record containing all of the data needed to construct an HTML node (via
 `VirtualDom.Node`). By using a record to temporarily store data about a node,
@@ -23,35 +25,8 @@ available to be modified until it is either placed in a container element or
 passed as an argument to the `render` function.
 
 -}
-type Element msg =
-  Element (Internal msg)
-
-
-{-| Specification of the internal record type. This is not exposed.
-
--}
-type alias Internal msg =
-  { tag : String
-  , id : String
-  , classes : List String
-  , styles : List (String, String)
-  , actions: List (String, Handler msg)
-  , attributes : List (VirtualDom.Attribute msg)
-  , text : String
-  , children : List (VirtualDom.Node msg)
-  , namespace : String
-  , keys : List String
-  }
-
-
-{-| Options for custom event handlers in VirtualDom
-
--}
-type alias Handler msg =
-  { message : msg
-  , stopPropagation : Bool
-  , preventDefault : Bool
-  }
+type alias Element msg =
+  Internal.Element msg
 
 
 -- CONSTRUCTOR
@@ -62,35 +37,23 @@ tag.
 -}
 element : String -> Element msg
 element tag =
-  Element
-    { tag = tag
-    , id = ""
-    , classes = []
-    , styles = []
-    , actions = []
-    , attributes = []
-    , text = ""
-    , children = []
-    , namespace = ""
-    , keys = []
-    }
+  { tag = tag
+  , id = ""
+  , classes = []
+  , styles = []
+  , attributes = []
+  , listeners = []
+  , text = ""
+  , children = []
+  , namespace = ""
+  , keys = []
+  }
+    |> Internal.Element
 
 
 -- Modifier functions for attributes:
 ---- A "modifier" is any function that takes an existing element record,
 ---- updates some of its internal data, and returns the updated element record.
-
-
-{-| This function is used to access an `Element`'s internal record when applying
-a modifier function. By using it, we can avoid writing a case expression for
-each of the exposed functions below. This is an alternative to placing the
-implementation code in an separate, unexposed module.
-
--}
-modify : (Internal msg -> Internal msg) -> Element msg -> Element msg
-modify f n =
-  case n of
-    Element internal -> Element (f internal)
 
 
 -- ID
@@ -99,7 +62,7 @@ modify f n =
 -}
 setId : String -> Element msg -> Element msg
 setId s =
-  modify (\n -> { n | id = s })
+  Internal.modify (\n -> { n | id = s })
 
 
 -- CLASS
@@ -109,7 +72,7 @@ setId s =
 -}
 addClass : String -> Element msg -> Element msg
 addClass s =
-  modify (\n -> { n | classes = List.append n.classes [s] })
+  Internal.modify (\n -> { n | classes = List.append n.classes [s] })
 
 
 {-| Add a class name to the current list contained in an `Element` record when
@@ -129,7 +92,7 @@ record
 -}
 addClassList : List String -> Element msg -> Element msg
 addClassList ls =
-  modify (\n -> { n | classes = List.append n.classes ls })
+  Internal.modify (\n -> { n | classes = List.append n.classes ls })
 
 
 {-| Add a list of class names to the current list contained in an `Element`
@@ -149,7 +112,7 @@ addClassListConditional (ls, test) =
 -}
 removeClass : String -> Element msg -> Element msg
 removeClass s =
-  modify (\n -> { n | classes = n.classes |> List.filter ((/=) s) })
+  Internal.modify (\n -> { n | classes = n.classes |> List.filter ((/=) s) })
 
 
 {-| Delete the current list of class names contained in current `Element`
@@ -158,7 +121,7 @@ record, replacing it with a new list of class names
 -}
 replaceClassList : List String -> Element msg -> Element msg
 replaceClassList ls =
-  modify (\n -> { n | classes = ls })
+  Internal.modify (\n -> { n | classes = ls })
 
 
 -- STYLE
@@ -169,7 +132,7 @@ record
 -}
 addStyle : (String, String) -> Element msg -> Element msg
 addStyle kv =
-  modify (\n -> { n | styles = List.append n.styles [kv] })
+  Internal.modify (\n -> { n | styles = List.append n.styles [kv] })
 
 
 {-| Add a style key/value pair to the current list contained in an `Element`
@@ -189,7 +152,7 @@ addStyleConditional (kv, test) =
 -}
 addStyleList : List (String, String) -> Element msg -> Element msg
 addStyleList lkv =
-  modify (\n -> { n | styles = List.append n.styles lkv })
+  Internal.modify (\n -> { n | styles = List.append n.styles lkv })
 
 
 {-| Add a list of style key/value pairs to the current list contained in an
@@ -210,11 +173,11 @@ addStyleListConditional (lkv, test) =
 removeStyle : String -> Element msg -> Element msg
 removeStyle s =
   let
-    isNotKey arg (k, v) =
-      k /= arg
+    isNotKey name (k, v) =
+      k /= name
 
   in
-    modify (\n -> { n | styles = n.styles |> List.filter (isNotKey s) })
+    Internal.modify (\n -> { n | styles = n.styles |> List.filter (isNotKey s) })
 
 
 {-| Delete the current list of style key/value pairs contained in current
@@ -223,23 +186,22 @@ removeStyle s =
 -}
 replaceStyleList : List (String, String) -> Element msg -> Element msg
 replaceStyleList lkv =
-  modify (\n -> { n | styles = lkv })
+  Internal.modify (\n -> { n | styles = lkv })
 
 
--- ACTION
----- event listeners that don't capture an input value
+-- EVENT LISTENERS
+
+---- ACTIONS
 
 addAction : (String, msg) -> Element msg -> Element msg
 addAction (event, msg) =
   let
     handler =
-      { message = msg
-      , stopPropagation = False
-      , preventDefault = False
-      }
+      Json.Decode.succeed
+        >> VirtualDom.Normal
 
   in
-    modify (\n -> { n | actions = List.append n.actions [ (event, handler) ] })
+    Internal.modify (\n -> { n | listeners = List.append n.listeners [ (event, handler msg) ] })
 
 
 addActionConditional : ((String, msg), Bool) -> Element msg -> Element msg
@@ -250,169 +212,163 @@ addActionConditional (kv, test) =
 
 
 addActionStopPropagation : (String, msg) -> Element msg -> Element msg
-addActionStopPropagation (k, v) =
+addActionStopPropagation (event, msg) =
   let
     handler =
-      { message = msg
-      , stopPropagation = True
-      , preventDefault = False
-      }
+      Json.Decode.succeed
+        >> Json.Decode.map (\x -> (x, True))
+        >> VirtualDom.MayStopPropagation
 
   in
-    modify (\n -> { n | actions = List.append n.actions [ (event, handler) ] })
+    Internal.modify (\n -> { n | listeners = List.append n.listeners [ (event, handler msg) ] })
 
 
 addActionPreventDefault : (String, msg) -> Element msg -> Element msg
-addActionPreventDefault (k, v) =
+addActionPreventDefault (event, msg) =
   let
     handler =
-      { message = msg
-      , stopPropagation = False
-      , preventDefault = True
-      }
+      Json.Decode.succeed
+        >> Json.Decode.map (\x -> (x, True))
+        >> VirtualDom.MayPreventDefault
 
   in
-    modify (\n -> { n | actions = List.append n.actions [ (event, handler) ] })
+    Internal.modify (\n -> { n | listeners = List.append n.listeners [ (event, handler msg) ] })
 
 
 addActionStopAndPrevent : (String, msg) -> Element msg -> Element msg
-addActionStopAndPrevent (k, v) =
+addActionStopAndPrevent (event, msg) =
   let
     handler =
-      { message = msg
-      , stopPropagation = True
-      , preventDefault = True
-      }
+      Json.Decode.succeed
+        >> Json.Decode.map (\x ->
+          { message = x
+          , stopPropagation = True
+          , preventDefault = True
+          })
+        >> VirtualDom.Custom
 
   in
-    modify (\n -> { n | actions = List.append n.actions [ (event, handler) ] })
+    Internal.modify (\n -> { n | listeners = List.append n.listeners [ (event, handler msg) ] })
 
 
-removeAction : String -> Element msg -> Element msg
-removeAction s =
-  let
-    isNotKey arg (k, v) =
-      k /= arg
+---- INPUT HANDLERS
 
-  in
-    modify (\n -> { n | actions = n.actions |> List.filter (isNotKey s) })
-
-
--- event listeners that capture an input value (immediately rendered to `VirtualDom.Attribute`)
-
-
-captureValue : (String, String -> Handler msg) -> VirtualDom.Attribute msg
-captureValue (event, receiver) =
+addInputHandler : (String -> msg) -> Element msg -> Element msg
+addInputHandler token =
   let
     handler =
-      Json.Decode.string
-        |> Json.Decode.at ["target", "value"]
-        |> Json.Decode.map receiver
-        |> VirtualDom.Custom
+      Internal.captureStopPropagation ("value", Json.Decode.string)
 
   in
-    VirtualDom.on event handler
+    Internal.modify (\n -> { n | listeners = List.append n.listeners [ ("input", handler token) ] })
 
 
-captureChecked : (String, Bool -> Handler msg) -> VirtualDom.Attribute msg
-captureChecked (event, receiver) =
+addInputHandlerWithParser : (a -> msg, String -> a) -> Element msg -> Element msg
+addInputHandlerWithParser (token, parser) =
   let
     handler =
-      Json.Decode.bool
-        |> Json.Decode.at ["target", "checked"]
-        |> Json.Decode.map receiver
-        |> VirtualDom.Custom
+      Internal.captureStopPropagation ("value", Json.Decode.string)
+
+    transform =
+      parser >> token
 
   in
-    VirtualDom.on event handler
+    Internal.modify (\n -> { n | listeners = List.append n.listeners [ ("input", handler transform) ] })
 
 
-setInputHandler : (String -> msg) -> Element msg -> Element msg
-setInputHandler token =
+addChangeHandler : (String -> msg) -> Element msg -> Element msg
+addChangeHandler token =
   let
-    receiver string =
-      { message = token string
-      , stopPropagation = True
-      , preventDefault = False
-      }
-
-    eventAttribute =
-      captureValue ("input", receiver)
+    handler =
+      Internal.capture ("value", Json.Decode.string)
 
   in
-    modify (\n -> { n | attributes = List.append n.attributes [eventAttribute] })
+    Internal.modify (\n -> { n | listeners = List.append n.listeners [ ("change", handler token) ] })
 
 
-setInputHandlerWithParser : (a -> msg, String -> a) -> Element msg -> Element msg
-setInputHandlerWithParser (token, parser) =
+addChangeHandlerWithParser : (a -> msg, String -> a) -> Element msg -> Element msg
+addChangeHandlerWithParser (token, parser) =
   let
-    receiver string =
-      { message = token (string |> parser)
-      , stopPropagation = True
-      , preventDefault = False
-      }
+    handler =
+      Internal.capture ("value", Json.Decode.string)
 
-    eventAttribute =
-      captureValue ("input", receiver)
+    transform =
+      parser >> token
 
   in
-    modify (\n -> { n | attributes = List.append n.attributes [eventAttribute] })
+    Internal.modify (\n -> { n | listeners = List.append n.listeners [ ("change", handler transform) ] })
 
 
-setChangeHandler : (String -> msg) -> Element msg -> Element msg
-setChangeHandler token =
+addCheckHandler : (Bool -> msg) -> Element msg -> Element msg
+addCheckHandler token =
   let
-    receiver string =
-      { message = token string
-      , stopPropagation = False
-      , preventDefault = False
-      }
-
-    eventAttribute =
-      captureValue ("change", receiver)
+    handler =
+      Internal.capture ("checked", Json.Decode.bool)
 
   in
-    modify (\n -> { n | attributes = List.append n.attributes [eventAttribute] })
+    Internal.modify (\n -> { n | listeners = List.append n.listeners [ ("change", handler token) ] })
 
 
-setChangeHandlerWithParser : (a -> msg, String -> a) -> Element msg -> Element msg
-setChangeHandlerWithParser (token, parser) =
+---- CUSTOM LISTENERS
+
+addListener : (String, Json.Decode.Decoder msg) -> Element msg -> Element msg
+addListener (event, decoder) =
   let
-    receiver string =
-      { message = token (string |> parser)
-      , stopPropagation = False
-      , preventDefault = False
-      }
-
-    eventAttribute =
-      captureValue ("change", receiver)
+    handler =
+      VirtualDom.Normal
 
   in
-    modify (\n -> { n | attributes = List.append n.attributes [eventAttribute] })
+    Internal.modify (\n -> { n | listeners = List.append n.listeners [ (event, handler decoder) ] })
 
 
-setCheckHandler : (Bool -> msg) -> Element msg -> Element msg
-setCheckHandler token =
+addListenerStopPropagation : (String, Json.Decode.Decoder msg) -> Element msg -> Element msg
+addListenerStopPropagation (event, decoder) =
   let
-    receiver bool =
-      { message = token bool
-      , stopPropagation = False
-      , preventDefault = False
-      }
-
-    eventAttribute =
-      captureChecked ("change", receiver)
+    handler =
+      Json.Decode.map (\d -> (d, True))
+        >> VirtualDom.MayStopPropagation
 
   in
-    modify (\n -> { n | attributes = List.append n.attributes [eventAttribute] })
+    Internal.modify (\n -> { n | listeners = List.append n.listeners [ (event, handler decoder) ] })
 
 
+addListenerPreventDefault : (String, Json.Decode.Decoder msg) -> Element msg -> Element msg
+addListenerPreventDefault (event, decoder) =
+  let
+    handler =
+      Json.Decode.map (\d -> (d, True))
+        >> VirtualDom.MayPreventDefault
 
--- setCustomHandler : (String, Decoder msg) -> Element msg -> Element msg
--- setCustomHandlerStopPropagation : (String, Decoder msg) -> Element msg -> Element msg
--- setCustomHandlerPreventDefault : (String, Decoder msg) -> Element msg -> Element msg
--- setCustomHandlerStopAndPrevent : (String, Decoder msg) -> Element msg -> Element msg
---
+  in
+    Internal.modify (\n -> { n | listeners = List.append n.listeners [ (event, handler decoder) ] })
+
+
+addListenerStopAndPrevent : (String, Json.Decode.Decoder msg) -> Element msg -> Element msg
+addListenerStopAndPrevent (event, decoder) =
+  let
+    handler =
+      Json.Decode.map (\x ->
+        { message = x
+        , stopPropagation = True
+        , preventDefault = True
+        }
+      )
+        >> VirtualDom.Custom
+
+  in
+    Internal.modify (\n -> { n | listeners = List.append n.listeners [ (event, handler decoder) ] })
+
+
+removeListener : String -> Element msg -> Element msg
+removeListener s =
+  let
+    isNotKey name (k, v) =
+      k /= name
+
+  in
+    Internal.modify (\n -> { n | listeners = n.listeners |> List.filter (isNotKey s) })
+
+
 -- -- add any other attribute using an `Html.Attribute` function or `VirtualDom` primitive
 -- addAttribute : VirtualDom.Attribute msg -> Element msg -> Element msg
 -- addAttributeConditional : (VirtualDom.Attribute msg, Bool) -> Element msg -> Element msg
@@ -547,7 +503,7 @@ setCheckHandler token =
 
 -- For debugging
 
-getInternal : Element msg -> Internal msg
+getInternal : Element msg -> Internal.Data msg
 getInternal n =
   case n of
-    Element i -> i
+    Internal.Element data -> data
