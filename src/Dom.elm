@@ -1,14 +1,202 @@
 module Dom exposing
-  ( Element, element
+  ( Element
+  , element
+  , render
   , setId
-  , addClass, addClassConditional
-  , addClassList, addClassListConditional
-  , removeClass, replaceClassList
-  , addStyle, addStyleConditional
-  , addStyleList, addStyleListConditional
-  , removeStyle, replaceStyleList
-  , getInternal
+  , addClass
+  , addStyle
+  , addAttribute
+  , addAction
+  , addInputHandler
+  , addChangeHandler
+  , addToggleHandler
+  , appendText
+  , prependText
+  , appendChild
+  , prependChild
+  , addClassList
+  , addStyleList
+  , addAttributeList
+  , appendChildList
+  , prependChildList
+  , appendNodeList
+  , prependNodeList
+  , setChildListWithKeys
+  , setNodeListWithKeys
+  , addClassConditional
+  , addStyleConditional
+  , addAttributeConditional
+  , addClassListConditional
+  , addStyleListConditional
+  , addAttributeListConditional
+  , addActionConditional
+  , appendTextConditional
+  , prependTextConditional
+  , appendChildConditional
+  , appendChildListConditional
+  , prependChildConditional
+  , prependChildListConditional
+  , removeClass
+  , removeStyle
+  , removeListener
+  , replaceClassList
+  , replaceStyleList
+  , replaceAttributeList
+  , replaceText
+  , replaceTextConditional
+  , replaceChildList
+  , replaceChildListConditional
+  , replaceNodeList
+  , setTag
+  , setNamespace
+  , addInputHandlerWithParser
+  , addChangeHandlerWithParser
+  , addListener
+  , addListenerConditional
+  , addActionStopPropagation
+  , addListenerStopPropagation
+  , addActionPreventDefault
+  , addListenerPreventDefault
+  , addActionStopAndPrevent
+  , addListenerStopAndPrevent
+  , getData
   )
+
+
+{-|
+
+# Element
+@docs Element
+
+# Create and Render
+@docs element
+@docs render
+
+# Build
+
+## Using a single argument...
+
+### to set the id attribute
+@docs setId
+
+### to add a class, style, or other attribute
+@docs addClass
+@docs addStyle
+@docs addAttribute
+
+### to add an event listener
+@docs addAction
+@docs addInputHandler
+@docs addChangeHandler
+@docs addToggleHandler
+
+### to append or prepend internal text
+@docs appendText
+@docs prependText
+
+### to append or prepend a child element
+@docs appendChild
+@docs prependChild
+
+## Using a list argument...
+
+### to add a list of classes, styles, or other attributes
+@docs addClassList
+@docs addStyleList
+@docs addAttributeList
+
+### to append or prepend a list of child elements
+@docs appendChildList
+@docs prependChildList
+
+**you can also supply a list of `Html` nodes**
+@docs appendNodeList
+@docs prependNodeList
+
+**or a keyed list for performance optimization**
+@docs setChildListWithKeys
+@docs setNodeListWithKeys
+
+## Using a conditional parameter...
+
+### when adding a class, style, or other attribute
+@docs addClassConditional
+@docs addStyleConditional
+@docs addAttributeConditional
+
+### when adding a list of classes, styles, or other attributes
+@docs addClassListConditional
+@docs addStyleListConditional
+@docs addAttributeListConditional
+
+### when adding an event listener for an action
+@docs addActionConditional
+
+### when appending or prepending internal text
+@docs appendTextConditional
+@docs prependTextConditional
+
+### when appending or prepending child elements
+@docs appendChildConditional
+@docs appendChildListConditional
+@docs prependChildConditional
+@docs prependChildListConditional
+
+# Modify
+
+## Removing all instances of a single name or key
+@docs removeClass
+@docs removeStyle
+@docs removeListener
+
+## Replacing the existing list of classes, styles, or other attributes
+@docs replaceClassList
+@docs replaceStyleList
+@docs replaceAttributeList
+
+## Replacing the existing text
+@docs replaceText
+@docs replaceTextConditional
+
+## Replacing the existing descendant tree
+@docs replaceChildList
+@docs replaceChildListConditional
+@docs replaceNodeList
+
+# Advanced Usage
+
+## Setting an element's HTML/XML tag and namespace
+@docs setTag
+@docs setNamespace
+
+## Customizing event handling...
+
+### by transforming input values
+@docs addInputHandlerWithParser
+@docs addChangeHandlerWithParser
+
+### by using a custom decoder
+@docs addListener
+@docs addListenerConditional
+
+### by using custom handler options
+
+**stop propagation**
+@docs addActionStopPropagation
+@docs addListenerStopPropagation
+
+**prevent default**
+@docs addActionPreventDefault
+@docs addListenerPreventDefault
+
+**both**
+@docs addActionStopAndPrevent
+@docs addListenerStopAndPrevent
+
+# Debug
+@docs getData
+
+-}
 
 
 import VirtualDom
@@ -29,11 +217,10 @@ type alias Element msg =
   Internal.Element msg
 
 
--- CONSTRUCTOR
+---- CONSTRUCTOR ----
 
 {-| Constructor for `Element` records. The string argument provides the HTML
 tag.
-
 -}
 element : String -> Element msg
 element tag =
@@ -51,9 +238,16 @@ element tag =
     |> Internal.Element
 
 
--- Modifier functions for attributes:
----- A "modifier" is any function that takes an existing element record,
----- updates some of its internal data, and returns the updated element record.
+---- RENDERING ----
+
+{-| Convert an element record to Elm `Html`
+-}
+render : Element msg -> VirtualDom.Node msg
+render =
+  Internal.render
+
+
+---- MODIFIERS ----
 
 
 -- ID
@@ -68,7 +262,6 @@ setId s =
 -- CLASS
 
 {-| Add a class name to the current list contained in an `Element` record
-
 -}
 addClass : String -> Element msg -> Element msg
 addClass s =
@@ -77,10 +270,9 @@ addClass s =
 
 {-| Add a class name to the current list contained in an `Element` record when
 the boolean argument evaluates to `True`
-
 -}
-addClassConditional : (String, Bool) -> Element msg -> Element msg
-addClassConditional (s, test) =
+addClassConditional : String -> Bool -> Element msg -> Element msg
+addClassConditional s test =
   case test of
     True -> addClass s
     False -> identity
@@ -88,7 +280,6 @@ addClassConditional (s, test) =
 
 {-| Add a list of class names to the current list contained in an `Element`
 record
-
 -}
 addClassList : List String -> Element msg -> Element msg
 addClassList ls =
@@ -97,10 +288,9 @@ addClassList ls =
 
 {-| Add a list of class names to the current list contained in an `Element`
 record when the boolean argument evaluates to `True`
-
 -}
-addClassListConditional : (List String, Bool) -> Element msg -> Element msg
-addClassListConditional (ls, test) =
+addClassListConditional : List String -> Bool -> Element msg -> Element msg
+addClassListConditional ls test =
   case test of
     True -> addClassList ls
     False -> identity
@@ -108,7 +298,6 @@ addClassListConditional (ls, test) =
 
 {-| Delete all instances of a class name from the current list contained in an
 `Element` record
-
 -}
 removeClass : String -> Element msg -> Element msg
 removeClass s =
@@ -117,7 +306,6 @@ removeClass s =
 
 {-| Delete the current list of class names contained in current `Element`
 record, replacing it with a new list of class names
-
 -}
 replaceClassList : List String -> Element msg -> Element msg
 replaceClassList ls =
@@ -128,7 +316,6 @@ replaceClassList ls =
 
 {-| Add a style key/value pair to the current list contained in an `Element`
 record
-
 -}
 addStyle : (String, String) -> Element msg -> Element msg
 addStyle kv =
@@ -137,10 +324,9 @@ addStyle kv =
 
 {-| Add a style key/value pair to the current list contained in an `Element`
 record when the boolean argument evaluates to `True`
-
 -}
-addStyleConditional : ((String, String), Bool) -> Element msg -> Element msg
-addStyleConditional (kv, test) =
+addStyleConditional : (String, String) -> Bool -> Element msg -> Element msg
+addStyleConditional kv test =
   case test of
     True -> addStyle kv
     False -> identity
@@ -148,7 +334,6 @@ addStyleConditional (kv, test) =
 
 {-| Add a list of style key/value pairs to the current list contained in an
 `Element` record
-
 -}
 addStyleList : List (String, String) -> Element msg -> Element msg
 addStyleList lkv =
@@ -157,10 +342,9 @@ addStyleList lkv =
 
 {-| Add a list of style key/value pairs to the current list contained in an
 `Element` record when the boolean argument evaluates to `True`
-
 -}
-addStyleListConditional : (List (String, String), Bool) -> Element msg -> Element msg
-addStyleListConditional (lkv, test) =
+addStyleListConditional : List (String, String) -> Bool -> Element msg -> Element msg
+addStyleListConditional lkv test =
   case test of
     True -> addStyleList lkv
     False -> identity
@@ -168,7 +352,6 @@ addStyleListConditional (lkv, test) =
 
 {-| Delete all instances of a style key from the current list contained in an
 `Element` record
-
 -}
 removeStyle : String -> Element msg -> Element msg
 removeStyle s =
@@ -182,11 +365,41 @@ removeStyle s =
 
 {-| Delete the current list of style key/value pairs contained in current
 `Element` record, replacing it with a new list of style key/value pairs
-
 -}
 replaceStyleList : List (String, String) -> Element msg -> Element msg
 replaceStyleList lkv =
   Internal.modify (\n -> { n | styles = lkv })
+
+
+-- OTHER ATTRIBUTES
+
+addAttribute : VirtualDom.Attribute msg -> Element msg -> Element msg
+addAttribute a =
+  Internal.modify (\n -> { n | attributes = List.append n.attributes [a] })
+
+
+addAttributeConditional : VirtualDom.Attribute msg -> Bool -> Element msg -> Element msg
+addAttributeConditional a test =
+  case test of
+    True -> addAttribute a
+    False -> identity
+
+
+addAttributeList : List (VirtualDom.Attribute msg) -> Element msg -> Element msg
+addAttributeList la =
+  Internal.modify (\n -> { n | attributes = List.append n.attributes la })
+
+
+addAttributeListConditional : List (VirtualDom.Attribute msg) -> Bool -> Element msg -> Element msg
+addAttributeListConditional la test =
+  case test of
+    True -> addAttributeList la
+    False -> identity
+
+
+replaceAttributeList : List (VirtualDom.Attribute msg) -> Element msg -> Element msg
+replaceAttributeList la =
+  Internal.modify (\n -> { n | attributes = la })
 
 
 -- EVENT LISTENERS
@@ -204,8 +417,8 @@ addAction (event, msg) =
     Internal.modify (\n -> { n | listeners = List.append n.listeners [ (event, handler msg) ] })
 
 
-addActionConditional : ((String, msg), Bool) -> Element msg -> Element msg
-addActionConditional (kv, test) =
+addActionConditional : (String, msg) -> Bool -> Element msg -> Element msg
+addActionConditional kv test =
   case test of
     True -> addAction kv
     False -> identity
@@ -299,8 +512,8 @@ addChangeHandlerWithParser (token, parser) =
     Internal.modify (\n -> { n | listeners = List.append n.listeners [ ("change", handler transform) ] })
 
 
-addCheckHandler : (Bool -> msg) -> Element msg -> Element msg
-addCheckHandler token =
+addToggleHandler : (Bool -> msg) -> Element msg -> Element msg
+addToggleHandler token =
   let
     handler =
       Internal.capture ("checked", Json.Decode.bool)
@@ -321,8 +534,8 @@ addListener (event, decoder) =
     Internal.modify (\n -> { n | listeners = List.append n.listeners [ (event, handler decoder) ] })
 
 
-addListenerConditional : ((String, Decoder msg), Bool) -> Element msg -> Element msg
-addListenerConditional (kv, test) =
+addListenerConditional : (String, Decoder msg) -> Bool -> Element msg -> Element msg
+addListenerConditional kv test =
   case test of
     True -> addListener kv
     False -> identity
@@ -376,141 +589,177 @@ removeListener s =
     Internal.modify (\n -> { n | listeners = n.listeners |> List.filter (isNotKey s) })
 
 
--- -- add any other attribute using an `Html.Attribute` function or `VirtualDom` primitive
--- addAttribute : VirtualDom.Attribute msg -> Element msg -> Element msg
--- addAttributeConditional : (VirtualDom.Attribute msg, Bool) -> Element msg -> Element msg
--- addAttributeList : List (VirtualDom.Attribute msg) -> Element msg -> Element msg
--- addAttributeListConditional : (List (VirtualDom.Attribute msg), Bool) -> Element msg -> Element msg
--- replaceAttributeList : List (VirtualDom.Attribute msg) -> Element msg -> Element msg
---
--- -- Modifier functions for internal text:
--- -- Text is rendered to VirtualDom as the first child node, containing plain HTML text. Helper functions for styling text that were included in the previous version will be moved to a separate package.
---
--- appendText : String -> Element msg -> Element msg
--- appendTextConditional : (String, Bool) -> Element msg -> Element msg
--- prependText : String -> Element msg -> Element msg
--- prependTextConditional : (String, Bool) -> Element msg -> Element msg
--- replaceText : String -> Element msg -> Element msg
--- replaceTextConditional : (String, Bool) -> Element msg -> Element msg
---
--- -- Modifier functions to construct an element's internal tree:
--- -- Child elements are immediately rendered to VirtualDom when this function is executed. setChildListWithKeys uses the VirtualDom.KeyedNode optimization and should only be called once on any given node.
---
--- appendChild : Element msg -> Element msg -> Element msg
--- appendChildConditional : (Element msg, Bool) -> Element msg -> Element msg
--- appendChildList : List (Element msg) -> Element msg -> Element msg
--- appendChildListConditional : (List (Element msg), Bool) -> Element msg -> Element msg
--- appendNodeList : List (VirtualDom.Node msg) -> Element msg -> Element msg
--- prependChild : Element msg -> Element msg -> Element msg
--- prependChildConditional : (Element msg, Bool) -> Element msg -> Element msg
--- prependChildList : List (Element msg) -> Element msg -> Element msg
--- prependChildListConditional : (List (Element msg), Bool) -> Element msg -> Element msg
--- prependNodeList : List (VirtualDom.Node msg) -> Element msg -> Element msg
--- replaceChildList : List (Element msg) -> Element msg -> Element msg
--- replaceNodeList : List (VirtualDom.Node msg) -> Element msg -> Element msg
--- setChildListWithKeys : List (String, Element msg) -> Element msg -> Element msg
--- setNodeListWithKeys : List (String, VirtualDom.Node msg) -> Element msg -> Element msg
---
--- -- Modifier functions to set tag and namespace
--- -- The tag is already set with the element constructor function, but it could be useful to be able to change it when using component libraries. Namespace would typically be used to construct SVG nodes. Whenever the namespace field is not an empty string, VirtualDom.nodeNS is used for rendering.
---
--- setTag : String -> Element msg -> Element msg
--- setNamespace : String -> Element msg -> Element msg
---
--- -- Rendering
--- -- This function only needs to be called on the root node of a tree. VirtualDom.Node is interchangeable with Html.Html.
---
--- render : Element msg -> VirtualDom.Node msg
--- render root =
---   let
---     consId attributeList =
---       case root.id of
---         "" ->
---           attributeList
---
---         _ ->
---           ( root.id
---             |> Json.Encode.string
---             |> VirtualDom.property "id"
---           )
---             :: attributeList
---
---     consClassName attributeList =
---       case root.classes of
---         [] ->
---           attributeList
---
---         _ ->
---           ( root.classes
---             |> String.join " "
---             |> String.trim
---             |> Json.Encode.string
---             |> VirtualDom.property "className"
---           )
---             :: attributeList
---
---     consNamespace attributeList =
---       case root.namespace of
---         "" ->
---           attributeList
---
---         _ ->
---           ( root.namespace
---             |> Json.Encode.string
---             |> VirtualDom.property "namespace"
---           )
---             :: attributeList
---
---     consText childList =
---       case root.text of
---           "" ->
---             childList
---
---           _ ->
---             ( root.text
---               |> VirtualDom.text
---             )
---               :: childList
---
---     consTextKeyed keyedList =
---       case root.text of
---           "" ->
---             keyedList
---
---           _ ->
---             ( root.text
---               |> VirtualDom.text
---               |> (,) ("internal-text")
---             )
---               :: keyedList
---
---   in
---     case root.keys of
---       [] ->
---         root.children
---           |> consText
---           |> VirtualDom.node root.tag
---             ( root.attributes
---               |> consId
---               |> consClassName
---               |> consNamespace
---             )
---
---       _ ->
---         root.children
---           |> List.map2 (,) root.keys
---           |> consTextKeyed
---           |> VirtualDom.keyedNode root.tag
---             ( root.attributes
---               |> consId
---               |> consClassName
---               |> consNamespace
---             )
+-- INTERNAL TEXT
+
+appendText : String -> Element msg -> Element msg
+appendText s =
+  Internal.modify (\n -> { n | text = String.append n.text s })
 
 
--- For debugging
+appendTextConditional : String -> Bool -> Element msg -> Element msg
+appendTextConditional s test =
+  case test of
+    True -> appendText s
+    False -> identity
 
-getInternal : Element msg -> Internal.Data msg
-getInternal n =
+
+prependText : String -> Element msg -> Element msg
+prependText s =
+  Internal.modify (\n -> { n | text = String.append s n.text })
+
+
+prependTextConditional : String -> Bool -> Element msg -> Element msg
+prependTextConditional s test =
+  case test of
+    True -> prependText s
+    False -> identity
+
+
+replaceText : String -> Element msg -> Element msg
+replaceText s =
+  Internal.modify (\n -> { n | text = s })
+
+
+replaceTextConditional : String -> Bool -> Element msg -> Element msg
+replaceTextConditional s test =
+  case test of
+    True -> replaceText s
+    False -> identity
+
+
+-- CHILD ELEMENTS
+
+appendChild : Element msg -> Element msg -> Element msg
+appendChild e =
+  let
+    r =
+      Internal.render e
+
+  in
+    Internal.modify (\n -> { n | children = List.append n.children [r] })
+
+
+appendChildConditional : Element msg -> Bool -> Element msg -> Element msg
+appendChildConditional e test =
+  case test of
+    True -> appendChild e
+    False -> identity
+
+
+appendChildList : List (Element msg) -> Element msg -> Element msg
+appendChildList le =
+  let
+    lr =
+      le |> List.map Internal.render
+
+  in
+    Internal.modify (\n -> { n | children = List.append n.children lr })
+
+
+appendChildListConditional : List (Element msg) -> Bool -> Element msg -> Element msg
+appendChildListConditional le test =
+  case test of
+    True -> appendChildList le
+    False -> identity
+
+
+appendNodeList : List (VirtualDom.Node msg) -> Element msg -> Element msg
+appendNodeList ln =
+  Internal.modify (\n -> { n | children = List.append n.children ln })
+
+
+prependChild : Element msg -> Element msg -> Element msg
+prependChild e =
+  let
+    r =
+      Internal.render e
+
+  in
+    Internal.modify (\n -> { n | children = r :: n.children })
+
+
+prependChildConditional : Element msg -> Bool -> Element msg -> Element msg
+prependChildConditional e test =
+  case test of
+    True -> prependChild e
+    False -> identity
+
+
+prependChildList : List (Element msg) -> Element msg -> Element msg
+prependChildList le =
+  let
+    lr =
+      le |> List.map Internal.render
+
+  in
+    Internal.modify (\n -> { n | children = List.append lr n.children })
+
+
+prependChildListConditional : List (Element msg) -> Bool -> Element msg -> Element msg
+prependChildListConditional le test =
+  case test of
+    True -> prependChildList le
+    False -> identity
+
+
+prependNodeList : List (VirtualDom.Node msg) -> Element msg -> Element msg
+prependNodeList ln =
+  Internal.modify (\n -> { n | children = List.append ln n.children })
+
+
+replaceChildList : List (Element msg) -> Element msg -> Element msg
+replaceChildList le =
+  let
+    lr =
+      le |> List.map Internal.render
+
+  in
+    Internal.modify (\n -> { n | children = lr })
+
+
+replaceNodeList : List (VirtualDom.Node msg) -> Element msg -> Element msg
+replaceNodeList ln =
+  Internal.modify (\n -> { n | children = ln })
+
+
+setChildListWithKeys : List (String, Element msg) -> Element msg -> Element msg
+setChildListWithKeys lkv =
+  let
+    (ls, le) =
+      List.unzip lkv
+
+    lr =
+      le |> List.map Internal.render
+
+  in
+    Internal.modify (\n -> { n | children = lr, keys = ls })
+
+
+setNodeListWithKeys : List (String, VirtualDom.Node msg) -> Element msg -> Element msg
+setNodeListWithKeys lkv =
+  let
+    (ls, ln) =
+      List.unzip lkv
+
+  in
+    Internal.modify (\n -> { n | children = ln, keys = ls })
+
+
+-- TAG and NAMESPACE
+
+setTag : String -> Element msg -> Element msg
+setTag s =
+  Internal.modify (\n -> { n | tag = s })
+
+
+setNamespace : String -> Element msg -> Element msg
+setNamespace s =
+  Internal.modify (\n -> { n | namespace = s })
+
+
+---- DEBUGGING ----
+
+getData : Element msg -> Internal.Data msg
+getData n =
   case n of
     Internal.Element data -> data

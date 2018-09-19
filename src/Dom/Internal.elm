@@ -1,6 +1,7 @@
 module Dom.Internal exposing
   ( Element(..)
   , Data
+  , render
   , modify
   , capture
   , captureStopPropagation
@@ -8,6 +9,10 @@ module Dom.Internal exposing
   , captureStopAndPrevent
   )
 
+{-| This module is exposed so that package developers can make use of element
+record internals and helper functions. It is not recommended for use in
+application code.
+-}
 
 import VirtualDom
 import Json.Decode
@@ -59,6 +64,10 @@ modify f n =
       Element (f data)
 
 
+render : Element msg -> VirtualDom.Node msg
+render =
+  always (VirtualDom.node "div" [] [])
+
 capture : (String, Json.Decode.Decoder a) -> (a -> msg) -> VirtualDom.Handler msg
 capture (field, decoder) token =
   decoder
@@ -96,3 +105,95 @@ captureStopAndPrevent (field, decoder) token =
       , preventDefault = True
       })
     |> VirtualDom.Custom
+
+
+
+-- -- Rendering
+-- -- This function only needs to be called on the root node of a tree. VirtualDom.Node is interchangeable with Html.Html.
+--
+-- render : Element msg -> VirtualDom.Node msg
+-- render root =
+--   let
+--     consId attributeList =
+--       case root.id of
+--         "" ->
+--           attributeList
+--
+--         _ ->
+--           ( root.id
+--             |> Json.Encode.string
+--             |> VirtualDom.property "id"
+--           )
+--             :: attributeList
+--
+--     consClassName attributeList =
+--       case root.classes of
+--         [] ->
+--           attributeList
+--
+--         _ ->
+--           ( root.classes
+--             |> String.join " "
+--             |> String.trim
+--             |> Json.Encode.string
+--             |> VirtualDom.property "className"
+--           )
+--             :: attributeList
+--
+--     consNamespace attributeList =
+--       case root.namespace of
+--         "" ->
+--           attributeList
+--
+--         _ ->
+--           ( root.namespace
+--             |> Json.Encode.string
+--             |> VirtualDom.property "namespace"
+--           )
+--             :: attributeList
+--
+--     consText childList =
+--       case root.text of
+--           "" ->
+--             childList
+--
+--           _ ->
+--             ( root.text
+--               |> VirtualDom.text
+--             )
+--               :: childList
+--
+--     consTextKeyed keyedList =
+--       case root.text of
+--           "" ->
+--             keyedList
+--
+--           _ ->
+--             ( root.text
+--               |> VirtualDom.text
+--               |> (,) ("internal-text")
+--             )
+--               :: keyedList
+--
+--   in
+--     case root.keys of
+--       [] ->
+--         root.children
+--           |> consText
+--           |> VirtualDom.node root.tag
+--             ( root.attributes
+--               |> consId
+--               |> consClassName
+--               |> consNamespace
+--             )
+--
+--       _ ->
+--         root.children
+--           |> List.map2 (,) root.keys
+--           |> consTextKeyed
+--           |> VirtualDom.keyedNode root.tag
+--             ( root.attributes
+--               |> consId
+--               |> consClassName
+--               |> consNamespace
+--             )
