@@ -205,12 +205,23 @@ import Json.Decode exposing (Decoder)
 import Dom.Internal as Internal
 
 
-{-| A record containing all of the data needed to construct an HTML node (via
-`VirtualDom.Node`). By using a record to temporarily store data about a node,
-we can partially construct that node with some data, but delay building it until
-all of the data has been assembled. In this way, all of a node's data is
-available to be modified until it is either placed in a container element or
-passed as an argument to the `render` function.
+{-| `Dom.Element` is an [opaque type] that stores an internal record, defined
+[here]. The internal record contains all of the data needed to construct an
+Elm `Html` node. By using a record to temporarily store data about a node, we
+can partially construct that node with some data, but delay building it until
+all of the data has been assembled.
+
+A new `Element` record can be created by calling the [element] function. The
+record will be rendered to `Html` when it is added as a child element to another
+`Element` record, or when it is passed as an argument to the [render]
+function. Because rendering is built into the functional development pattern of
+this package, it is only necessary to call the `render` function once, on the
+root node of your DOM tree.
+
+[opaque type]: https://medium.com/@ghivert/designing-api-in-elm-opaque-types-ce9d5f113033
+[here]: Dom-Internal#Data
+[element]: #element
+[render]: #render
 
 -}
 type alias Element msg =
@@ -240,7 +251,8 @@ element tag =
 
 ---- RENDERING ----
 
-{-| Convert an element record to Elm `Html`
+{-| Convert an `Element` record to Elm `Html`. This function only needs to be
+called once, on the root node of your DOM tree.
 -}
 render : Element msg -> VirtualDom.Node msg
 render =
@@ -252,7 +264,7 @@ render =
 
 -- ID
 
-{-| Set the id attribute on an `Element` record
+{-| Sets or resets the id attribute
 -}
 setId : String -> Element msg -> Element msg
 setId s =
@@ -261,15 +273,14 @@ setId s =
 
 -- CLASS
 
-{-| Add a class name to the current list contained in an `Element` record
+{-| Adds a class name to the current list
 -}
 addClass : String -> Element msg -> Element msg
 addClass s =
   Internal.modify (\n -> { n | classes = List.append n.classes [s] })
 
 
-{-| Add a class name to the current list contained in an `Element` record when
-the boolean argument evaluates to `True`
+{-| Adds a class name to the current list when the condition is `True`
 -}
 addClassConditional : String -> Bool -> Element msg -> Element msg
 addClassConditional s test =
@@ -278,16 +289,14 @@ addClassConditional s test =
     False -> identity
 
 
-{-| Add a list of class names to the current list contained in an `Element`
-record
+{-| Adds a list of class names to the current list
 -}
 addClassList : List String -> Element msg -> Element msg
 addClassList ls =
   Internal.modify (\n -> { n | classes = List.append n.classes ls })
 
 
-{-| Add a list of class names to the current list contained in an `Element`
-record when the boolean argument evaluates to `True`
+{-| Adds a list of class names to the current list when the condition is `True`
 -}
 addClassListConditional : List String -> Bool -> Element msg -> Element msg
 addClassListConditional ls test =
@@ -296,16 +305,14 @@ addClassListConditional ls test =
     False -> identity
 
 
-{-| Delete all instances of a class name from the current list contained in an
-`Element` record
+{-| Removes all instances of a class name from the current list
 -}
 removeClass : String -> Element msg -> Element msg
 removeClass s =
   Internal.modify (\n -> { n | classes = n.classes |> List.filter ((/=) s) })
 
 
-{-| Delete the current list of class names contained in current `Element`
-record, replacing it with a new list of class names
+{-| Replaces the current list of class names with a new list
 -}
 replaceClassList : List String -> Element msg -> Element msg
 replaceClassList ls =
@@ -314,16 +321,14 @@ replaceClassList ls =
 
 -- STYLE
 
-{-| Add a style key/value pair to the current list contained in an `Element`
-record
+{-| Adds a style key/value pair to the current list
 -}
 addStyle : (String, String) -> Element msg -> Element msg
 addStyle kv =
   Internal.modify (\n -> { n | styles = List.append n.styles [kv] })
 
 
-{-| Add a style key/value pair to the current list contained in an `Element`
-record when the boolean argument evaluates to `True`
+{-| Adds a style key/value pair to the current list when the condition is `True`
 -}
 addStyleConditional : (String, String) -> Bool -> Element msg -> Element msg
 addStyleConditional kv test =
@@ -332,16 +337,15 @@ addStyleConditional kv test =
     False -> identity
 
 
-{-| Add a list of style key/value pairs to the current list contained in an
-`Element` record
+{-| Adds a list of style key/value pairs to the current list
 -}
 addStyleList : List (String, String) -> Element msg -> Element msg
 addStyleList lkv =
   Internal.modify (\n -> { n | styles = List.append n.styles lkv })
 
 
-{-| Add a list of style key/value pairs to the current list contained in an
-`Element` record when the boolean argument evaluates to `True`
+{-| Adds a list of style key/value pairs to the current list when the condition
+is `True`
 -}
 addStyleListConditional : List (String, String) -> Bool -> Element msg -> Element msg
 addStyleListConditional lkv test =
@@ -350,8 +354,7 @@ addStyleListConditional lkv test =
     False -> identity
 
 
-{-| Delete all instances of a style key from the current list contained in an
-`Element` record
+{-| Removes all instances of a style key from the current list
 -}
 removeStyle : String -> Element msg -> Element msg
 removeStyle s =
@@ -363,8 +366,7 @@ removeStyle s =
     Internal.modify (\n -> { n | styles = n.styles |> List.filter (isNotKey s) })
 
 
-{-| Delete the current list of style key/value pairs contained in current
-`Element` record, replacing it with a new list of style key/value pairs
+{-| Replace the current list of style key/value pairs with a new list
 -}
 replaceStyleList : List (String, String) -> Element msg -> Element msg
 replaceStyleList lkv =
@@ -373,11 +375,24 @@ replaceStyleList lkv =
 
 -- OTHER ATTRIBUTES
 
+{-| Adds an attribute to the current list
+
+Note: For [complicated reasons], there is more than one `VirtualDom`
+primitive for assigning attributes to DOM elements. Unless you are really
+confident in what you are doing, I recommend using the constructors in
+`Html.Attributes` and `Html.Events` (or `Svg.Attributes` and `Svg.Events`) to
+ensure that the implementation used internally best matches the current spec.
+
+[complicated reasons]: https://package.elm-lang.org/packages/elm/virtual-dom/latest/VirtualDom#Attribute
+
+-}
 addAttribute : VirtualDom.Attribute msg -> Element msg -> Element msg
 addAttribute a =
   Internal.modify (\n -> { n | attributes = List.append n.attributes [a] })
 
 
+{-| Adds an attribute to the current list when the condition is `True`
+-}
 addAttributeConditional : VirtualDom.Attribute msg -> Bool -> Element msg -> Element msg
 addAttributeConditional a test =
   case test of
@@ -385,11 +400,15 @@ addAttributeConditional a test =
     False -> identity
 
 
+{-| Adds a list of attributes to the current list
+-}
 addAttributeList : List (VirtualDom.Attribute msg) -> Element msg -> Element msg
 addAttributeList la =
   Internal.modify (\n -> { n | attributes = List.append n.attributes la })
 
 
+{-| Adds a list of attributes to the current list when the condition is `True`
+-}
 addAttributeListConditional : List (VirtualDom.Attribute msg) -> Bool -> Element msg -> Element msg
 addAttributeListConditional la test =
   case test of
@@ -397,6 +416,8 @@ addAttributeListConditional la test =
     False -> identity
 
 
+{-| Replaces the current list of attributes with a new list
+-}
 replaceAttributeList : List (VirtualDom.Attribute msg) -> Element msg -> Element msg
 replaceAttributeList la =
   Internal.modify (\n -> { n | attributes = la })
@@ -406,6 +427,18 @@ replaceAttributeList la =
 
 ---- ACTIONS
 
+{-| Adds an action to the current list of event listeners
+
+As defined here, an *action* is a simple event listener that does nothing except
+send a message to your Elm program's update function when the specified event is
+triggered. This is useful for responding to events like "click", "mouseover",
+"mouseout", and so on.
+
+Event names in the DOM API are documented [here].
+
+[here]: https://developer.mozilla.org/en-US/docs/Web/Events
+
+-}
 addAction : (String, msg) -> Element msg -> Element msg
 addAction (event, msg) =
   let
@@ -417,6 +450,9 @@ addAction (event, msg) =
     Internal.modify (\n -> { n | listeners = List.append n.listeners [ (event, handler msg) ] })
 
 
+{-| Adds an action to the current list of event listeners when the condition is
+`True`
+-}
 addActionConditional : (String, msg) -> Bool -> Element msg -> Element msg
 addActionConditional kv test =
   case test of
@@ -424,6 +460,12 @@ addActionConditional kv test =
     False -> identity
 
 
+{-| Adds an action to the current list of event listeners using the [Handler]
+type `MayStopPropagation` with the option set to `True`
+
+[Handler]: https://package.elm-lang.org/packages/elm/virtual-dom/latest/VirtualDom#Handler
+
+-}
 addActionStopPropagation : (String, msg) -> Element msg -> Element msg
 addActionStopPropagation (event, msg) =
   let
@@ -436,6 +478,12 @@ addActionStopPropagation (event, msg) =
     Internal.modify (\n -> { n | listeners = List.append n.listeners [ (event, handler msg) ] })
 
 
+{-| Adds an action to the current list of event listeners using the [Handler]
+option `MayPreventDefault` with the option set to `True`
+
+[Handler]: https://package.elm-lang.org/packages/elm/virtual-dom/latest/VirtualDom#Handler
+
+-}
 addActionPreventDefault : (String, msg) -> Element msg -> Element msg
 addActionPreventDefault (event, msg) =
   let
@@ -448,6 +496,12 @@ addActionPreventDefault (event, msg) =
     Internal.modify (\n -> { n | listeners = List.append n.listeners [ (event, handler msg) ] })
 
 
+{-| Adds an action to the current list of event listeners using the [Handler]
+type `Custom` with both options set to `True`
+
+[Handler]: https://package.elm-lang.org/packages/elm/virtual-dom/latest/VirtualDom#Handler
+
+-}
 addActionStopAndPrevent : (String, msg) -> Element msg -> Element msg
 addActionStopAndPrevent (event, msg) =
   let
@@ -466,6 +520,14 @@ addActionStopAndPrevent (event, msg) =
 
 ---- INPUT HANDLERS
 
+{-| Adds an input handler for form elements to the current list of event
+listeners
+
+Internally, this function is equivalent to [Html.Events.onInput].
+
+[Html.Events.onInput]: https://package.elm-lang.org/packages/elm/html/latest/Html-Events#onInput
+
+-}
 addInputHandler : (String -> msg) -> Element msg -> Element msg
 addInputHandler token =
   let
@@ -476,6 +538,16 @@ addInputHandler token =
     Internal.modify (\n -> { n | listeners = List.append n.listeners [ ("input", handler token) ] })
 
 
+{-| Adds an input handler for form elements to the current list of event
+listeners
+
+The parser works as follows: when the "input" event is triggered, a `String` is
+captured from `event.target.value`; then the parsing function is applied before
+the resulting value is passed to your Elm program's update function. For simple
+error handling, it is recommended to have your parsing function return a `Maybe`
+value.
+
+-}
 addInputHandlerWithParser : (a -> msg, String -> a) -> Element msg -> Element msg
 addInputHandlerWithParser (token, parser) =
   let
@@ -489,6 +561,16 @@ addInputHandlerWithParser (token, parser) =
     Internal.modify (\n -> { n | listeners = List.append n.listeners [ ("input", handler transform) ] })
 
 
+{-| Adds value change handler for form elements to the current list of event
+listeners
+
+This handler captures `event.target.value` on a ["change"] event, which can
+sometimes be useful when designing form interaction. Unlike the default input
+handler, it does not invoke the "stopPropagation" option.
+
+["change"]: https://developer.mozilla.org/en-US/docs/Web/Events/change
+
+-}
 addChangeHandler : (String -> msg) -> Element msg -> Element msg
 addChangeHandler token =
   let
@@ -499,6 +581,22 @@ addChangeHandler token =
     Internal.modify (\n -> { n | listeners = List.append n.listeners [ ("change", handler token) ] })
 
 
+{-| Adds a value change handler for form elements to the current list of event
+listeners
+
+This handler captures `event.target.value` on a ["change"] event, which can
+sometimes be useful when designing form interaction. Unlike the default input
+handler, it does not invoke the "stopPropagation" option.
+
+The parser works as follows: when the "change" event is triggered, a `String` is
+captured from `event.target.value`; then the parsing function is applied before
+the resulting value is passed to your Elm program's update function. For simple
+error handling, it is recommended to have your parsing function return a `Maybe`
+value.
+
+["change"]: https://developer.mozilla.org/en-US/docs/Web/Events/change
+
+-}
 addChangeHandlerWithParser : (a -> msg, String -> a) -> Element msg -> Element msg
 addChangeHandlerWithParser (token, parser) =
   let
@@ -512,6 +610,14 @@ addChangeHandlerWithParser (token, parser) =
     Internal.modify (\n -> { n | listeners = List.append n.listeners [ ("change", handler transform) ] })
 
 
+{-| Adds a toggle handler for checkboxes and radio buttons to the current list
+of event listeners
+
+Internally, this function is equivalent to [Html.Events.onCheck].
+
+[Html.Events.onCheck]: https://package.elm-lang.org/packages/elm/html/latest/Html-Events#onCheck
+
+-}
 addToggleHandler : (Bool -> msg) -> Element msg -> Element msg
 addToggleHandler token =
   let
@@ -524,6 +630,16 @@ addToggleHandler token =
 
 ---- CUSTOM LISTENERS
 
+{-| Adds a listener to the current list that will invoke a custom `Json` decoder
+when the specified [event] is triggered.
+
+The `VirtualDom` implementation for this function uses the [Handler] type
+`Normal`.
+
+[event]: https://developer.mozilla.org/en-US/docs/Web/Events
+[Handler]: https://package.elm-lang.org/packages/elm/virtual-dom/latest/VirtualDom#Handler
+
+-}
 addListener : (String, Decoder msg) -> Element msg -> Element msg
 addListener (event, decoder) =
   let
@@ -534,6 +650,10 @@ addListener (event, decoder) =
     Internal.modify (\n -> { n | listeners = List.append n.listeners [ (event, handler decoder) ] })
 
 
+{-| Adds a listener to the current list (via `addListener`) when the condition
+is `True`
+
+-}
 addListenerConditional : (String, Decoder msg) -> Bool -> Element msg -> Element msg
 addListenerConditional kv test =
   case test of
@@ -541,6 +661,13 @@ addListenerConditional kv test =
     False -> identity
 
 
+{-| Adds a listener to the current list that will invoke a custom `Json` decoder
+when the specified event is triggered
+
+The `VirtualDom` implementation for this function uses the `Handler` type
+`MayStopPropagation` with the option set to `True`.
+
+-}
 addListenerStopPropagation : (String, Decoder msg) -> Element msg -> Element msg
 addListenerStopPropagation (event, decoder) =
   let
@@ -552,6 +679,13 @@ addListenerStopPropagation (event, decoder) =
     Internal.modify (\n -> { n | listeners = List.append n.listeners [ (event, handler decoder) ] })
 
 
+{-| Adds a listener to the current list that will invoke a custom `Json` decoder
+when the specified event is triggered
+
+The `VirtualDom` implementation for this function uses the `Handler` type
+`MayPreventDefault` with the option set to `True`.
+
+-}
 addListenerPreventDefault : (String, Decoder msg) -> Element msg -> Element msg
 addListenerPreventDefault (event, decoder) =
   let
@@ -563,6 +697,13 @@ addListenerPreventDefault (event, decoder) =
     Internal.modify (\n -> { n | listeners = List.append n.listeners [ (event, handler decoder) ] })
 
 
+{-| Adds a listener to the current list that will invoke a custom `Json` decoder
+when the specified event is triggered
+
+The `VirtualDom` implementation for this function uses the `Handler` type
+`Custom` with both options set to `True`.
+
+-}
 addListenerStopAndPrevent : (String, Decoder msg) -> Element msg -> Element msg
 addListenerStopAndPrevent (event, decoder) =
   let
@@ -579,6 +720,9 @@ addListenerStopAndPrevent (event, decoder) =
     Internal.modify (\n -> { n | listeners = List.append n.listeners [ (event, handler decoder) ] })
 
 
+{-| Removes all instances of a key (event name) from the current list of event
+listeners
+-}
 removeListener : String -> Element msg -> Element msg
 removeListener s =
   let
@@ -591,11 +735,15 @@ removeListener s =
 
 -- INTERNAL TEXT
 
+{-| Adds a string to the end of the current text
+-}
 appendText : String -> Element msg -> Element msg
 appendText s =
   Internal.modify (\n -> { n | text = String.append n.text s })
 
 
+{-| Adds a string to the end of the current text when the condition is `True`
+-}
 appendTextConditional : String -> Bool -> Element msg -> Element msg
 appendTextConditional s test =
   case test of
@@ -603,11 +751,16 @@ appendTextConditional s test =
     False -> identity
 
 
+{-| Adds a string to the beginning of the current text
+-}
 prependText : String -> Element msg -> Element msg
 prependText s =
   Internal.modify (\n -> { n | text = String.append s n.text })
 
 
+{-| Adds a string to the beginning of the current text when the condition is
+`True`
+-}
 prependTextConditional : String -> Bool -> Element msg -> Element msg
 prependTextConditional s test =
   case test of
@@ -615,11 +768,15 @@ prependTextConditional s test =
     False -> identity
 
 
+{-| Replaces the current text with new text
+-}
 replaceText : String -> Element msg -> Element msg
 replaceText s =
   Internal.modify (\n -> { n | text = s })
 
 
+{-| Replaces the current text with new text when the condition is `True`
+-}
 replaceTextConditional : String -> Bool -> Element msg -> Element msg
 replaceTextConditional s test =
   case test of
@@ -629,6 +786,9 @@ replaceTextConditional s test =
 
 -- CHILD ELEMENTS
 
+{-| Renders an element (the first argument) and adds it to the end of the
+current child list (in the second argument)
+-}
 appendChild : Element msg -> Element msg -> Element msg
 appendChild e =
   let
@@ -639,6 +799,9 @@ appendChild e =
     Internal.modify (\n -> { n | children = List.append n.children [r] })
 
 
+{-| Renders an element and adds it to the end of the current child list when the
+condition is true
+-}
 appendChildConditional : Element msg -> Bool -> Element msg -> Element msg
 appendChildConditional e test =
   case test of
@@ -646,6 +809,9 @@ appendChildConditional e test =
     False -> identity
 
 
+{-| Renders a list of elements and adds them to the end of the current child
+list
+-}
 appendChildList : List (Element msg) -> Element msg -> Element msg
 appendChildList le =
   let
@@ -656,6 +822,9 @@ appendChildList le =
     Internal.modify (\n -> { n | children = List.append n.children lr })
 
 
+{-| Renders a list of elements and adds them to the end of the current child
+list when the condition is `True`
+-}
 appendChildListConditional : List (Element msg) -> Bool -> Element msg -> Element msg
 appendChildListConditional le test =
   case test of
@@ -663,11 +832,15 @@ appendChildListConditional le test =
     False -> identity
 
 
+{-| Adds a list of `Html` nodes to the end of the the current child list
+-}
 appendNodeList : List (VirtualDom.Node msg) -> Element msg -> Element msg
 appendNodeList ln =
   Internal.modify (\n -> { n | children = List.append n.children ln })
 
 
+{-| Renders an element and adds it to the beginning of the current child list
+-}
 prependChild : Element msg -> Element msg -> Element msg
 prependChild e =
   let
@@ -678,6 +851,9 @@ prependChild e =
     Internal.modify (\n -> { n | children = r :: n.children })
 
 
+{-| Renders an element and adds it to the beginning of the current child list
+when the condition is `True`
+-}
 prependChildConditional : Element msg -> Bool -> Element msg -> Element msg
 prependChildConditional e test =
   case test of
@@ -685,6 +861,9 @@ prependChildConditional e test =
     False -> identity
 
 
+{-| Renders a list of elements and adds them to the beginning of the current
+child list
+-}
 prependChildList : List (Element msg) -> Element msg -> Element msg
 prependChildList le =
   let
@@ -695,6 +874,9 @@ prependChildList le =
     Internal.modify (\n -> { n | children = List.append lr n.children })
 
 
+{-| Renders a list of elements and adds them to the beginning of the current child list
+when the condition is `True`
+-}
 prependChildListConditional : List (Element msg) -> Bool -> Element msg -> Element msg
 prependChildListConditional le test =
   case test of
@@ -702,11 +884,16 @@ prependChildListConditional le test =
     False -> identity
 
 
+{-| Adds a list of `Html` nodes to the beginning of the the current child list
+-}
 prependNodeList : List (VirtualDom.Node msg) -> Element msg -> Element msg
 prependNodeList ln =
   Internal.modify (\n -> { n | children = List.append ln n.children })
 
 
+{-| Renders a list of elements replaces the current child list with the rendered
+list
+-}
 replaceChildList : List (Element msg) -> Element msg -> Element msg
 replaceChildList le =
   let
@@ -717,11 +904,32 @@ replaceChildList le =
     Internal.modify (\n -> { n | children = lr })
 
 
+{-| Replaces the current child list with the rendered list when the condition is
+`True`
+-}
+replaceChildListConditional : List (Element msg) -> Bool -> Element msg -> Element msg
+replaceChildListConditional le test =
+  case test of
+    True -> replaceChildList le
+    False -> identity
+
+
+{-| Replaces the current child list with a list of `Html` nodes
+-}
 replaceNodeList : List (VirtualDom.Node msg) -> Element msg -> Element msg
 replaceNodeList ln =
   Internal.modify (\n -> { n | children = ln })
 
 
+{-| Sets or resets the current child list from a keyed list of element records
+
+This is a performance optimization that will flag the rendering function to use
+[keyedNode] or [keyedNodeNS].
+
+[keyedNode]: https://package.elm-lang.org/packages/elm/virtual-dom/latest/VirtualDom#keyedNode
+[keyedNodeNS]: https://package.elm-lang.org/packages/elm/virtual-dom/latest/VirtualDom#keyedNodeNS
+
+-}
 setChildListWithKeys : List (String, Element msg) -> Element msg -> Element msg
 setChildListWithKeys lkv =
   let
@@ -735,6 +943,15 @@ setChildListWithKeys lkv =
     Internal.modify (\n -> { n | children = lr, keys = ls })
 
 
+{-| Sets or resets the current child list from a keyed list of `Html` nodes
+
+This is a performance optimization that will flag the rendering function to use
+[keyedNode] or [keyedNodeNS].
+
+[keyedNode]: https://package.elm-lang.org/packages/elm/virtual-dom/latest/VirtualDom#keyedNode
+[keyedNodeNS]: https://package.elm-lang.org/packages/elm/virtual-dom/latest/VirtualDom#keyedNodeNS
+
+-}
 setNodeListWithKeys : List (String, VirtualDom.Node msg) -> Element msg -> Element msg
 setNodeListWithKeys lkv =
   let
@@ -747,11 +964,24 @@ setNodeListWithKeys lkv =
 
 -- TAG and NAMESPACE
 
+{-| Sets or resets the HTML tag
+
+This is generally unnecessary because the tag is set by the `element`
+constructor; it may be useful to have when working with component libraries
+based on this package.
+
+-}
 setTag : String -> Element msg -> Element msg
 setTag s =
   Internal.modify (\n -> { n | tag = s })
 
 
+{-| Sets the XML namespace as described [here]
+
+This is required when using `Element` records to construct SVG nodes.
+
+[here]: https://package.elm-lang.org/packages/elm/virtual-dom/latest/VirtualDom#nodeNS
+-}
 setNamespace : String -> Element msg -> Element msg
 setNamespace s =
   Internal.modify (\n -> { n | namespace = s })
@@ -759,6 +989,8 @@ setNamespace s =
 
 ---- DEBUGGING ----
 
+{-| Returns a record containing the `Element`'s internal data
+-}
 getData : Element msg -> Internal.Data msg
 getData n =
   case n of

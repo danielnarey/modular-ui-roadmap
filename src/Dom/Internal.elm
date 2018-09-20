@@ -58,10 +58,8 @@ implementation code in an separate, unexposed module.
 
 -}
 modify : (Data msg -> Data msg) -> Element msg -> Element msg
-modify f n =
-  case n of
-    Element data ->
-      Element (f data)
+modify f (Element data) =
+  Element (f data)
 
 
 render : Element msg -> VirtualDom.Node msg
