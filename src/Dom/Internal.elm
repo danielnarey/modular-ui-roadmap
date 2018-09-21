@@ -1,49 +1,57 @@
 module Dom.Internal exposing
   ( Element(..)
   , Data
-  , render
   , modify
+  , render
   , capture
   , captureStopPropagation
   , capturePreventDefault
   , captureStopAndPrevent
   )
 
-{-| This module is exposed so that package developers can make use of element
-record internals and helper functions. It is not recommended for use in
-application code.
+{-| This module is exposed so that package developers can make use of `Element`
+record internals. It is not recommended for use in application code.
+
+# Internal Types
+@docs Element
+@docs Data
+
+# Internal Functions
+@docs modify
+@docs render
+
+# Internal Helpers for Event Handling
+@docs capture
+@docs captureStopPropagation
+@docs capturePreventDefault
+@docs captureStopAndPrevent
+
 -}
+
 
 import VirtualDom
 import Json.Decode
+import Json.Encode
+
 
 {-| Abstraction of an
 [Element](https://developer.mozilla.org/en-US/docs/Web/API/Element) in the
 [Document Object Model](https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model/Introduction)
 (DOM) interface to HTML and XML documents.
-
-A record containing all of the data needed to construct an HTML node (via
-`VirtualDom.Node`). By using a record to temporarily store data about a node,
-we can partially construct that node with some data, but delay building it until
-all of the data has been assembled. In this way, all of a node's data is
-available to be modified until it is either placed in a container element or
-passed as an argument to the `render` function.
-
 -}
 type Element msg =
   Element (Data msg)
 
 
-{-| Internal data
-
+{-| A record containing all of the data needed to construct a `VirtualDom` node.
 -}
 type alias Data msg =
   { tag : String
   , id : String
   , classes : List String
   , styles : List (String, String)
-  , attributes : List (VirtualDom.Attribute msg)
   , listeners: List (String, VirtualDom.Handler msg)
+  , attributes : List (VirtualDom.Attribute msg)
   , text : String
   , children : List (VirtualDom.Node msg)
   , namespace : String
@@ -51,21 +59,17 @@ type alias Data msg =
   }
 
 
-{-| This function is used to access an `Element`'s internal record when applying
-a modifier function. By using it, we can avoid writing a case expression for
-each of the exposed functions below. This is an alternative to placing the
-implementation code in an separate, unexposed module.
-
+{-| Modify an `Element`'s internal data by applying a record update function
 -}
 modify : (Data msg -> Data msg) -> Element msg -> Element msg
 modify f (Element data) =
   Element (f data)
 
 
-render : Element msg -> VirtualDom.Node msg
-render =
-  always (VirtualDom.node "div" [] [])
-
+{-| Construct a `VirtualDom.Handler` that captures input by proving the name of
+a field at `event.target` to capture, a decoder to read that field, and a
+message token to pass the result to the Elm program's update function
+-}
 capture : (String, Json.Decode.Decoder a) -> (a -> msg) -> VirtualDom.Handler msg
 capture (field, decoder) token =
   decoder
@@ -74,6 +78,8 @@ capture (field, decoder) token =
     |> VirtualDom.Normal
 
 
+{-| Construct a `VirtualDom.Handler` with `MayStopPropagation` set to `True`
+-}
 captureStopPropagation : (String, Json.Decode.Decoder a) -> (a -> msg) -> VirtualDom.Handler msg
 captureStopPropagation (field, decoder) token =
   decoder
@@ -83,6 +89,8 @@ captureStopPropagation (field, decoder) token =
     |> VirtualDom.MayStopPropagation
 
 
+{-| Construct a `VirtualDom.Handler` with `MayPreventDefault` set to `True`
+-}
 capturePreventDefault : (String, Json.Decode.Decoder a) -> (a -> msg) -> VirtualDom.Handler msg
 capturePreventDefault (field, decoder) token =
   decoder
@@ -92,6 +100,8 @@ capturePreventDefault (field, decoder) token =
     |> VirtualDom.MayPreventDefault
 
 
+{-| Construct a `VirtualDom.Handler` with both `Custom` options set to `True`
+-}
 captureStopAndPrevent : (String, Json.Decode.Decoder a) -> (a -> msg) -> VirtualDom.Handler msg
 captureStopAndPrevent (field, decoder) token =
   decoder
@@ -105,93 +115,104 @@ captureStopAndPrevent (field, decoder) token =
     |> VirtualDom.Custom
 
 
+{-| Internal render function
+-}
+render : Element msg -> VirtualDom.Node msg
+render (Element data) =
+  let
+    consId =
+      case data.id of
+        "" ->
+          identity
 
--- -- Rendering
--- -- This function only needs to be called on the root node of a tree. VirtualDom.Node is interchangeable with Html.Html.
---
--- render : Element msg -> VirtualDom.Node msg
--- render root =
---   let
---     consId attributeList =
---       case root.id of
---         "" ->
---           attributeList
---
---         _ ->
---           ( root.id
---             |> Json.Encode.string
---             |> VirtualDom.property "id"
---           )
---             :: attributeList
---
---     consClassName attributeList =
---       case root.classes of
---         [] ->
---           attributeList
---
---         _ ->
---           ( root.classes
---             |> String.join " "
---             |> String.trim
---             |> Json.Encode.string
---             |> VirtualDom.property "className"
---           )
---             :: attributeList
---
---     consNamespace attributeList =
---       case root.namespace of
---         "" ->
---           attributeList
---
---         _ ->
---           ( root.namespace
---             |> Json.Encode.string
---             |> VirtualDom.property "namespace"
---           )
---             :: attributeList
---
---     consText childList =
---       case root.text of
---           "" ->
---             childList
---
---           _ ->
---             ( root.text
---               |> VirtualDom.text
---             )
---               :: childList
---
---     consTextKeyed keyedList =
---       case root.text of
---           "" ->
---             keyedList
---
---           _ ->
---             ( root.text
---               |> VirtualDom.text
---               |> (,) ("internal-text")
---             )
---               :: keyedList
---
---   in
---     case root.keys of
---       [] ->
---         root.children
---           |> consText
---           |> VirtualDom.node root.tag
---             ( root.attributes
---               |> consId
---               |> consClassName
---               |> consNamespace
---             )
---
---       _ ->
---         root.children
---           |> List.map2 (,) root.keys
---           |> consTextKeyed
---           |> VirtualDom.keyedNode root.tag
---             ( root.attributes
---               |> consId
---               |> consClassName
---               |> consNamespace
---             )
+        _ ->
+          data.id
+            |> Json.Encode.string
+            |> VirtualDom.property "id"
+            |> (::)
+
+    consClassName =
+      case data.classes of
+        [] ->
+          identity
+
+        _ ->
+          data.classes
+            |> String.join " "
+            |> Json.Encode.string
+            |> VirtualDom.property "className"
+            |> (::)
+
+    prependStyles =
+      case data.styles of
+        [] ->
+          identity
+
+        _ ->
+          data.styles
+            |> List.map (\(k, v) -> VirtualDom.style k v)
+            |> List.append
+
+
+    prependListeners =
+      case data.listeners of
+        [] ->
+          identity
+
+        _ ->
+          data.listeners
+            |> List.map (\(k, v) -> VirtualDom.on k v)
+            |> List.append
+
+
+    consText =
+      case data.text of
+          "" ->
+            identity
+
+          _ ->
+            data.text
+              |> VirtualDom.text
+              |> (::)
+
+    consTextKeyed =
+      case data.text of
+          "" ->
+            identity
+
+          _ ->
+            data.text
+              |> VirtualDom.text
+              |> Tuple.pair "rendered-internal-text"
+              |> (::)
+
+    allAttributes =
+      data.attributes
+        |> prependListeners
+        |> prependStyles
+        |> consClassName
+        |> consId
+
+  in
+    case (data.namespace, data.keys)  of
+      ("", []) ->
+        data.children
+          |> consText
+          |> VirtualDom.node data.tag allAttributes
+
+      (_, []) ->
+        data.children
+          |> consText
+          |> VirtualDom.nodeNS data.namespace data.tag allAttributes
+
+      ("", _) ->
+        data.children
+          |> List.map2 Tuple.pair data.keys
+          |> consTextKeyed
+          |> VirtualDom.keyedNode data.tag allAttributes
+
+      (_, _) ->
+        data.children
+          |> List.map2 Tuple.pair data.keys
+          |> consTextKeyed
+          |> VirtualDom.keyedNodeNS data.namespace data.tag allAttributes

@@ -3,8 +3,11 @@ module Tests exposing (..)
 import Expect exposing (Expectation)
 import Test exposing (..)
 
-import Dom.Internal
 import Dom
+import Dom.Internal
+
+import Html
+import Html.Attributes as Attr
 
 
 testString1 = "abc123"
@@ -45,7 +48,37 @@ equalityTests =
       { div | classes = [ testString1, testString2 ] }
         |> Expect.notEqual { div | classes = [ testString2, testString1 ] }
     )
-      |> test "Records should not match if listed items are in a different order"
+      |> test "Records should not be equal if listed items are in a different order"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.render
+        |> Expect.equal (Html.div [] [])
+    )
+      |> test "Rendered nodes should be equal if the tags are the same"
+
+  , ( \() ->
+      Dom.element "button"
+        |> Dom.render
+        |> Expect.notEqual (Html.div [] [])
+    )
+      |> test "Rendered nodes should not be equal if the tags are different"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.addClass "container"
+        |> Dom.render
+        |> Expect.equal (Html.div [Attr.class "container"] [])
+    )
+      |> test "Rendered nodes should be equal if attribute values are the same"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.addClass "column"
+        |> Dom.render
+        |> Expect.notEqual (Html.div [Attr.class "container"] [])
+    )
+      |> test "Rendered nodes should not be equal if attribute values are different"
   ]
 
 
@@ -195,6 +228,7 @@ modifierTests =
         |> Expect.equal { div | styles = [ (testString3, testString4) ] }
     )
       |> test "`Dom.replaceStyleList` result should match a normal record update"
+
   ]
 
 
