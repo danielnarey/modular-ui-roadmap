@@ -4502,17 +4502,13 @@ var author$project$Dom$addClassList = function (ls) {
 				});
 		});
 };
-var author$project$Dom$addStyle = function (kv) {
+var author$project$Dom$addStyleList = function (lkv) {
 	return author$project$Dom$Internal$modify(
 		function (n) {
 			return _Utils_update(
 				n,
 				{
-					o: A2(
-						elm$core$List$append,
-						n.o,
-						_List_fromArray(
-							[kv]))
+					o: A2(elm$core$List$append, n.o, lkv)
 				});
 		});
 };
@@ -5181,16 +5177,6 @@ var author$project$Hover$button = function (context) {
 				['btn', 'btn-' + context]),
 			author$project$Dom$element('button')));
 };
-var author$project$Dom$addStyleList = function (lkv) {
-	return author$project$Dom$Internal$modify(
-		function (n) {
-			return _Utils_update(
-				n,
-				{
-					o: A2(elm$core$List$append, n.o, lkv)
-				});
-		});
-};
 var author$project$Hover$circle = function (diameter) {
 	var diameterPx = elm$core$String$fromInt(diameter) + 'px';
 	return A2(
@@ -5286,8 +5272,12 @@ var author$project$Hover$view = function (state) {
 					author$project$Hover$example(state)
 				]),
 			A2(
-				author$project$Dom$addStyle,
-				_Utils_Tuple2('maxWidth', '500px'),
+				author$project$Dom$addStyleList,
+				_List_fromArray(
+					[
+						_Utils_Tuple2('maxWidth', '500px'),
+						_Utils_Tuple2('height', '450px')
+					]),
 				A2(
 					author$project$Dom$addClassList,
 					_List_fromArray(

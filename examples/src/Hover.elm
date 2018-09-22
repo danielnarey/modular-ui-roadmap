@@ -16,15 +16,22 @@ main =
     |> Browser.sandbox
 
 
+-- model type alias
+
 type alias State =
   { listening : Bool
   , hovering : Bool
   }
 
+
+-- message type
+
 type Toggle
   = Listen
   | Hover
 
+
+-- UPDATE --
 
 update : Toggle -> State -> State
 update msg state =
@@ -32,6 +39,8 @@ update msg state =
     Listen -> { state | listening = not state.listening }
     Hover -> { state | hovering = not state.hovering }
 
+
+-- VIEW --
 
 view : State -> Html Toggle
 view state =
@@ -50,7 +59,10 @@ view state =
         , "border"
         , "rounded"
         ]
-      |> Dom.addStyle ("maxWidth", "500px")
+      |> Dom.addStyleList
+        [ ("maxWidth", "500px")
+        , ("height", "450px")
+        ]
       |> Dom.appendChildList
         [ heading
         , example state

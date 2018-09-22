@@ -5212,17 +5212,13 @@ var author$project$Dom$addClass = function (s) {
 				});
 		});
 };
-var author$project$Dom$addStyle = function (kv) {
+var author$project$Dom$addStyleList = function (lkv) {
 	return author$project$Dom$Internal$modify(
 		function (n) {
 			return _Utils_update(
 				n,
 				{
-					o: A2(
-						elm$core$List$append,
-						n.o,
-						_List_fromArray(
-							[kv]))
+					o: A2(elm$core$List$append, n.o, lkv)
 				});
 		});
 };
@@ -5244,8 +5240,12 @@ var author$project$Button$view = function (current) {
 					author$project$Button$example(current)
 				]),
 			A2(
-				author$project$Dom$addStyle,
-				_Utils_Tuple2('maxWidth', '500px'),
+				author$project$Dom$addStyleList,
+				_List_fromArray(
+					[
+						_Utils_Tuple2('maxWidth', '500px'),
+						_Utils_Tuple2('height', '450px')
+					]),
 				A2(
 					author$project$Dom$addClassList,
 					_List_fromArray(

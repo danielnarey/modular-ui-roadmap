@@ -16,8 +16,12 @@ main =
     |> Browser.sandbox
 
 
+-- message type
+
 type Click = Click
 
+
+-- VIEW --
 
 view : Int -> Html Click
 view current =
@@ -36,7 +40,10 @@ view current =
         , "border"
         , "rounded"
         ]
-      |> Dom.addStyle ("maxWidth", "500px")
+      |> Dom.addStyleList
+        [ ("maxWidth", "500px")
+        , ("height", "450px")
+        ]
       |> Dom.appendChildList
         [ heading
         , example current
