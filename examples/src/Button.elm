@@ -25,6 +25,15 @@ type Click = Click
 
 view : Int -> Html Click
 view current =
+  container
+    |> Dom.appendChild (example current)
+    |> Dom.render
+
+
+-- styled container element
+
+container : Dom.Element msg
+container =
   let
     heading =
       Dom.element "h1"
@@ -44,11 +53,7 @@ view current =
         [ ("maxWidth", "500px")
         , ("height", "450px")
         ]
-      |> Dom.appendChildList
-        [ heading
-        , example current
-        ]
-      |> Dom.render
+      |> Dom.appendChild heading
 
 
 -- main interactive component

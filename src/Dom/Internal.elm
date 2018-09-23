@@ -34,7 +34,7 @@ import Json.Decode
 import Json.Encode
 
 
-{-| Abstraction of an
+{-| The type exposed by `Dom.elm`. You can think of this as an abstraction of
 [Element](https://developer.mozilla.org/en-US/docs/Web/API/Element) in the
 [Document Object Model](https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model/Introduction)
 (DOM) interface to HTML and XML documents.
@@ -43,7 +43,8 @@ type Element msg =
   Element (Data msg)
 
 
-{-| A record containing all of the data needed to construct a `VirtualDom` node.
+{-| An `Element`'s internal data. This is just a record containing all of the
+information needed to construct a `VirtualDom` node.
 -}
 type alias Data msg =
   { tag : String
@@ -123,7 +124,7 @@ render (Element data) =
     consId =
       case data.id of
         "" ->
-          identity
+          (\x -> x)
 
         _ ->
           data.id
@@ -134,7 +135,7 @@ render (Element data) =
     consClassName =
       case data.classes of
         [] ->
-          identity
+          (\x -> x)
 
         _ ->
           data.classes
@@ -146,7 +147,7 @@ render (Element data) =
     prependStyles =
       case data.styles of
         [] ->
-          identity
+          (\x -> x)
 
         _ ->
           data.styles
@@ -157,7 +158,7 @@ render (Element data) =
     prependListeners =
       case data.listeners of
         [] ->
-          identity
+          (\x -> x)
 
         _ ->
           data.listeners
@@ -168,7 +169,7 @@ render (Element data) =
     consText =
       case data.text of
           "" ->
-            identity
+            (\x -> x)
 
           _ ->
             data.text
@@ -178,7 +179,7 @@ render (Element data) =
     consTextKeyed =
       case data.text of
           "" ->
-            identity
+            (\x -> x)
 
           _ ->
             data.text

@@ -4478,37 +4478,17 @@ var elm$core$List$append = F2(
 			return A3(elm$core$List$foldr, elm$core$List$cons, ys, xs);
 		}
 	});
-var author$project$Dom$addClass = function (s) {
+var author$project$Dom$appendNode = function (v) {
 	return author$project$Dom$Internal$modify(
 		function (n) {
 			return _Utils_update(
 				n,
 				{
-					m: A2(
+					b: A2(
 						elm$core$List$append,
-						n.m,
+						n.b,
 						_List_fromArray(
-							[s]))
-				});
-		});
-};
-var author$project$Dom$addClassList = function (ls) {
-	return author$project$Dom$Internal$modify(
-		function (n) {
-			return _Utils_update(
-				n,
-				{
-					m: A2(elm$core$List$append, n.m, ls)
-				});
-		});
-};
-var author$project$Dom$addStyleList = function (lkv) {
-	return author$project$Dom$Internal$modify(
-		function (n) {
-			return _Utils_update(
-				n,
-				{
-					o: A2(elm$core$List$append, n.o, lkv)
+							[v]))
 				});
 		});
 };
@@ -4626,25 +4606,25 @@ var elm$core$Basics$sub = _Basics_sub;
 var elm$core$Elm$JsArray$length = _JsArray_length;
 var elm$core$Array$builderToArray = F2(
 	function (reverseNodeList, builder) {
-		if (!builder.b) {
+		if (!builder.c) {
 			return A4(
 				elm$core$Array$Array_elm_builtin,
-				elm$core$Elm$JsArray$length(builder.d),
+				elm$core$Elm$JsArray$length(builder.e),
 				elm$core$Array$shiftStep,
 				elm$core$Elm$JsArray$empty,
-				builder.d);
+				builder.e);
 		} else {
-			var treeLen = builder.b * elm$core$Array$branchFactor;
+			var treeLen = builder.c * elm$core$Array$branchFactor;
 			var depth = elm$core$Basics$floor(
 				A2(elm$core$Basics$logBase, elm$core$Array$branchFactor, treeLen - 1));
 			var correctNodeList = reverseNodeList ? elm$core$List$reverse(builder.f) : builder.f;
-			var tree = A2(elm$core$Array$treeFromBuilder, correctNodeList, builder.b);
+			var tree = A2(elm$core$Array$treeFromBuilder, correctNodeList, builder.c);
 			return A4(
 				elm$core$Array$Array_elm_builtin,
-				elm$core$Elm$JsArray$length(builder.d) + treeLen,
+				elm$core$Elm$JsArray$length(builder.e) + treeLen,
 				A2(elm$core$Basics$max, 5, depth * elm$core$Array$shiftStep),
 				tree,
-				builder.d);
+				builder.e);
 		}
 	});
 var elm$core$Basics$False = 1;
@@ -4659,7 +4639,7 @@ var elm$core$Array$initializeHelp = F5(
 				return A2(
 					elm$core$Array$builderToArray,
 					false,
-					{f: nodeList, b: (len / elm$core$Array$branchFactor) | 0, d: tail});
+					{f: nodeList, c: (len / elm$core$Array$branchFactor) | 0, e: tail});
 			} else {
 				var leaf = elm$core$Array$Leaf(
 					A3(elm$core$Elm$JsArray$initialize, elm$core$Array$branchFactor, fromIndex, fn));
@@ -5004,7 +4984,9 @@ var author$project$Dom$Internal$render = function (_n0) {
 	var consId = function () {
 		var _n3 = data._;
 		if (_n3 === '') {
-			return elm$core$Basics$identity;
+			return function (a) {
+				return a;
+			};
 		} else {
 			return elm$core$List$cons(
 				A2(
@@ -5037,14 +5019,14 @@ var author$project$Dom$Internal$render = function (_n0) {
 				elm$virtual_dom$VirtualDom$node,
 				data.as,
 				allAttributes,
-				consText(data.e));
+				consText(data.b));
 		} else {
 			return A3(
 				elm$virtual_dom$VirtualDom$keyedNode,
 				data.as,
 				allAttributes,
 				consTextKeyed(
-					A3(elm$core$List$map2, elm$core$Tuple$pair, data.P, data.e)));
+					A3(elm$core$List$map2, elm$core$Tuple$pair, data.P, data.b)));
 		}
 	} else {
 		if (!_n1.b.b) {
@@ -5053,7 +5035,7 @@ var author$project$Dom$Internal$render = function (_n0) {
 				data.ad,
 				data.as,
 				allAttributes,
-				consText(data.e));
+				consText(data.b));
 		} else {
 			return A4(
 				elm$virtual_dom$VirtualDom$keyedNodeNS,
@@ -5061,18 +5043,57 @@ var author$project$Dom$Internal$render = function (_n0) {
 				data.as,
 				allAttributes,
 				consTextKeyed(
-					A3(elm$core$List$map2, elm$core$Tuple$pair, data.P, data.e)));
+					A3(elm$core$List$map2, elm$core$Tuple$pair, data.P, data.b)));
 		}
 	}
 };
-var author$project$Dom$appendChildList = function (le) {
-	var lr = A2(elm$core$List$map, author$project$Dom$Internal$render, le);
+var author$project$Dom$render = author$project$Dom$Internal$render;
+var author$project$Dom$addClass = function (s) {
 	return author$project$Dom$Internal$modify(
 		function (n) {
 			return _Utils_update(
 				n,
 				{
-					e: A2(elm$core$List$append, n.e, lr)
+					m: A2(
+						elm$core$List$append,
+						n.m,
+						_List_fromArray(
+							[s]))
+				});
+		});
+};
+var author$project$Dom$addClassList = function (ls) {
+	return author$project$Dom$Internal$modify(
+		function (n) {
+			return _Utils_update(
+				n,
+				{
+					m: A2(elm$core$List$append, n.m, ls)
+				});
+		});
+};
+var author$project$Dom$addStyleList = function (lkv) {
+	return author$project$Dom$Internal$modify(
+		function (n) {
+			return _Utils_update(
+				n,
+				{
+					o: A2(elm$core$List$append, n.o, lkv)
+				});
+		});
+};
+var author$project$Dom$appendChild = function (e) {
+	var r = author$project$Dom$Internal$render(e);
+	return author$project$Dom$Internal$modify(
+		function (n) {
+			return _Utils_update(
+				n,
+				{
+					b: A2(
+						elm$core$List$append,
+						n.b,
+						_List_fromArray(
+							[r]))
 				});
 		});
 };
@@ -5088,9 +5109,32 @@ var author$project$Dom$appendText = function (s) {
 		});
 };
 var author$project$Dom$element = function (tag) {
-	return {v: _List_Nil, e: _List_Nil, m: _List_Nil, _: '', P: _List_Nil, a: _List_Nil, ad: '', o: _List_Nil, as: tag, B: ''};
+	return {v: _List_Nil, b: _List_Nil, m: _List_Nil, _: '', P: _List_Nil, a: _List_Nil, ad: '', o: _List_Nil, as: tag, B: ''};
 };
-var author$project$Dom$render = author$project$Dom$Internal$render;
+var author$project$Hover$container = function () {
+	var heading = A2(
+		author$project$Dom$appendText,
+		'Hover.elm',
+		A2(
+			author$project$Dom$addClass,
+			'pb-3',
+			author$project$Dom$element('h1')));
+	return A2(
+		author$project$Dom$appendChild,
+		heading,
+		A2(
+			author$project$Dom$addStyleList,
+			_List_fromArray(
+				[
+					_Utils_Tuple2('maxWidth', '500px'),
+					_Utils_Tuple2('height', '450px')
+				]),
+			A2(
+				author$project$Dom$addClassList,
+				_List_fromArray(
+					['mx-auto', 'my-4', 'p-4', 'border', 'rounded']),
+				author$project$Dom$element('div'))));
+}();
 var elm$core$Basics$composeR = F3(
 	function (f, g, x) {
 		return g(
@@ -5128,18 +5172,14 @@ var author$project$Dom$addClassConditional = F2(
 			return elm$core$Basics$identity;
 		}
 	});
-var author$project$Dom$appendChild = function (e) {
-	var r = author$project$Dom$Internal$render(e);
+var author$project$Dom$appendChildList = function (le) {
+	var lr = A2(elm$core$List$map, author$project$Dom$Internal$render, le);
 	return author$project$Dom$Internal$modify(
 		function (n) {
 			return _Utils_update(
 				n,
 				{
-					e: A2(
-						elm$core$List$append,
-						n.e,
-						_List_fromArray(
-							[r]))
+					b: A2(elm$core$List$append, n.b, lr)
 				});
 		});
 };
@@ -5239,50 +5279,31 @@ var author$project$Hover$example = function (state) {
 						return 'secondary';
 					}
 				}())));
-	return A2(
-		author$project$Dom$appendChildList,
-		_List_fromArray(
-			[
-				hoverCircle,
-				A2(
-				author$project$Dom$appendChild,
-				controller,
-				author$project$Dom$element('div'))
-			]),
-		A2(
-			author$project$Dom$addClassList,
-			_List_fromArray(
-				['p-5', 'text-center', 'bg-light', 'rounded']),
-			author$project$Dom$element('div')));
-};
-var author$project$Hover$view = function (state) {
-	var heading = A2(
-		author$project$Dom$appendText,
-		'Hover.elm',
-		A2(
-			author$project$Dom$addClass,
-			'pb-3',
-			author$project$Dom$element('h1')));
 	return author$project$Dom$render(
 		A2(
 			author$project$Dom$appendChildList,
 			_List_fromArray(
 				[
-					heading,
-					author$project$Hover$example(state)
+					hoverCircle,
+					A2(
+					author$project$Dom$appendChild,
+					controller,
+					author$project$Dom$element('div'))
 				]),
 			A2(
-				author$project$Dom$addStyleList,
+				author$project$Dom$addClassList,
 				_List_fromArray(
-					[
-						_Utils_Tuple2('maxWidth', '500px'),
-						_Utils_Tuple2('height', '450px')
-					]),
-				A2(
-					author$project$Dom$addClassList,
-					_List_fromArray(
-						['mx-auto', 'my-4', 'p-4', 'border', 'rounded']),
-					author$project$Dom$element('div')))));
+					['p-5', 'text-center', 'bg-light', 'rounded']),
+				author$project$Dom$element('div'))));
+};
+var elm$virtual_dom$VirtualDom$lazy = _VirtualDom_lazy;
+var elm$html$Html$Lazy$lazy = elm$virtual_dom$VirtualDom$lazy;
+var author$project$Hover$view = function (state) {
+	return author$project$Dom$render(
+		A2(
+			author$project$Dom$appendNode,
+			A2(elm$html$Html$Lazy$lazy, author$project$Hover$example, state),
+			author$project$Hover$container));
 };
 var elm$core$Platform$Cmd$batch = _Platform_batch;
 var elm$core$Platform$Cmd$none = elm$core$Platform$Cmd$batch(_List_Nil);

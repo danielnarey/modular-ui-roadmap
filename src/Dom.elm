@@ -14,6 +14,8 @@ module Dom exposing
   , prependText
   , appendChild
   , prependChild
+  , appendNode
+  , prependNode
   , addClassList
   , addStyleList
   , addAttributeList
@@ -98,6 +100,10 @@ module Dom exposing
 @docs appendChild
 @docs prependChild
 
+**you can also supply an `Html` node**
+@docs appendNode
+@docs prependNode
+
 ## Using a list argument...
 
 ### to add a list of classes, styles, or other attributes
@@ -112,10 +118,6 @@ module Dom exposing
 **you can also supply a list of `Html` nodes**
 @docs appendNodeList
 @docs prependNodeList
-
-**or a keyed list for performance optimization**
-@docs setChildListWithKeys
-@docs setNodeListWithKeys
 
 ## Using a conditional parameter...
 
@@ -169,6 +171,10 @@ module Dom exposing
 @docs setTag
 @docs setNamespace
 
+## Using the `Html.Keyed` optimization
+@docs setChildListWithKeys
+@docs setNodeListWithKeys
+
 ## Customizing event handling...
 
 ### by transforming input values
@@ -211,17 +217,23 @@ Elm `Html` node. By using a record to temporarily store data about a node, we
 can partially construct that node with some data, but delay building it until
 all of the data has been assembled.
 
-A new `Element` record can be created by calling the [element] function. The
-record will be rendered to `Html` when it is added as a child element to another
+A new `Element` record is created when you call the [element] function. The
+record is then rendered to `Html` when it is added as a child element to another
 `Element` record, or when it is passed as an argument to the [render]
-function. Because rendering is built into the functional development pattern of
-this package, it is only necessary to call the `render` function once, on the
-root node of your DOM tree.
+function.
+
+Because rendering is built into the functional development pattern of
+this package, it is often only necessary to call the `render` function once, on
+the root node of your DOM tree. (One notable exception is when you want to use
+the [Html.Lazy] optimization; see [here] for a very simple example of how you
+would implement that with this package).
 
 [opaque type]: https://medium.com/@ghivert/designing-api-in-elm-opaque-types-ce9d5f113033
 [here]: Dom-Internal#Data
 [element]: #element
 [render]: #render
+[Html.Lazy]: https://package.elm-lang.org/packages/elm/html/latest/Html-Lazy
+[here]: Hover.elm
 
 -}
 type alias Element msg =
@@ -286,7 +298,7 @@ addClassConditional : String -> Bool -> Element msg -> Element msg
 addClassConditional s test =
   case test of
     True -> addClass s
-    False -> identity
+    False -> (\x -> x)
 
 
 {-| Adds a list of class names to the current list
@@ -302,7 +314,7 @@ addClassListConditional : List String -> Bool -> Element msg -> Element msg
 addClassListConditional ls test =
   case test of
     True -> addClassList ls
-    False -> identity
+    False -> (\x -> x)
 
 
 {-| Removes all instances of a class name from the current list
@@ -334,7 +346,7 @@ addStyleConditional : (String, String) -> Bool -> Element msg -> Element msg
 addStyleConditional kv test =
   case test of
     True -> addStyle kv
-    False -> identity
+    False -> (\x -> x)
 
 
 {-| Adds a list of style key/value pairs to the current list
@@ -351,7 +363,7 @@ addStyleListConditional : List (String, String) -> Bool -> Element msg -> Elemen
 addStyleListConditional lkv test =
   case test of
     True -> addStyleList lkv
-    False -> identity
+    False -> (\x -> x)
 
 
 {-| Removes all instances of a style key from the current list
@@ -397,7 +409,7 @@ addAttributeConditional : VirtualDom.Attribute msg -> Bool -> Element msg -> Ele
 addAttributeConditional a test =
   case test of
     True -> addAttribute a
-    False -> identity
+    False -> (\x -> x)
 
 
 {-| Adds a list of attributes to the current list
@@ -413,7 +425,7 @@ addAttributeListConditional : List (VirtualDom.Attribute msg) -> Bool -> Element
 addAttributeListConditional la test =
   case test of
     True -> addAttributeList la
-    False -> identity
+    False -> (\x -> x)
 
 
 {-| Replaces the current list of attributes with a new list
@@ -457,7 +469,7 @@ addActionConditional : (String, msg) -> Bool -> Element msg -> Element msg
 addActionConditional kv test =
   case test of
     True -> addAction kv
-    False -> identity
+    False -> (\x -> x)
 
 
 {-| Adds an action to the current list of event listeners using the [Handler]
@@ -658,7 +670,7 @@ addListenerConditional : (String, Decoder msg) -> Bool -> Element msg -> Element
 addListenerConditional kv test =
   case test of
     True -> addListener kv
-    False -> identity
+    False -> (\x -> x)
 
 
 {-| Adds a listener to the current list that will invoke a custom `Json` decoder
@@ -748,7 +760,7 @@ appendTextConditional : String -> Bool -> Element msg -> Element msg
 appendTextConditional s test =
   case test of
     True -> appendText s
-    False -> identity
+    False -> (\x -> x)
 
 
 {-| Adds a string to the beginning of the current text
@@ -765,7 +777,7 @@ prependTextConditional : String -> Bool -> Element msg -> Element msg
 prependTextConditional s test =
   case test of
     True -> prependText s
-    False -> identity
+    False -> (\x -> x)
 
 
 {-| Replaces the current text with new text
@@ -781,7 +793,7 @@ replaceTextConditional : String -> Bool -> Element msg -> Element msg
 replaceTextConditional s test =
   case test of
     True -> replaceText s
-    False -> identity
+    False -> (\x -> x)
 
 
 -- CHILD ELEMENTS
@@ -806,7 +818,14 @@ appendChildConditional : Element msg -> Bool -> Element msg -> Element msg
 appendChildConditional e test =
   case test of
     True -> appendChild e
-    False -> identity
+    False -> (\x -> x)
+
+
+{-| Adds an `Html` node to the end of the the current child list
+-}
+appendNode : VirtualDom.Node msg -> Element msg -> Element msg
+appendNode v =
+  Internal.modify (\n -> { n | children = List.append n.children [v] })
 
 
 {-| Renders a list of elements and adds them to the end of the current child
@@ -829,14 +848,14 @@ appendChildListConditional : List (Element msg) -> Bool -> Element msg -> Elemen
 appendChildListConditional le test =
   case test of
     True -> appendChildList le
-    False -> identity
+    False -> (\x -> x)
 
 
 {-| Adds a list of `Html` nodes to the end of the the current child list
 -}
 appendNodeList : List (VirtualDom.Node msg) -> Element msg -> Element msg
-appendNodeList ln =
-  Internal.modify (\n -> { n | children = List.append n.children ln })
+appendNodeList lv =
+  Internal.modify (\n -> { n | children = List.append n.children lv })
 
 
 {-| Renders an element and adds it to the beginning of the current child list
@@ -858,7 +877,14 @@ prependChildConditional : Element msg -> Bool -> Element msg -> Element msg
 prependChildConditional e test =
   case test of
     True -> prependChild e
-    False -> identity
+    False -> (\x -> x)
+
+
+{-| Adds an `Html` node to the beginning of the the current child list
+-}
+prependNode : VirtualDom.Node msg -> Element msg -> Element msg
+prependNode v =
+  Internal.modify (\n -> { n | children = v :: n.children })
 
 
 {-| Renders a list of elements and adds them to the beginning of the current
@@ -881,14 +907,14 @@ prependChildListConditional : List (Element msg) -> Bool -> Element msg -> Eleme
 prependChildListConditional le test =
   case test of
     True -> prependChildList le
-    False -> identity
+    False -> (\x -> x)
 
 
 {-| Adds a list of `Html` nodes to the beginning of the the current child list
 -}
 prependNodeList : List (VirtualDom.Node msg) -> Element msg -> Element msg
-prependNodeList ln =
-  Internal.modify (\n -> { n | children = List.append ln n.children })
+prependNodeList lv =
+  Internal.modify (\n -> { n | children = List.append lv n.children })
 
 
 {-| Renders a list of elements replaces the current child list with the rendered
@@ -911,7 +937,7 @@ replaceChildListConditional : List (Element msg) -> Bool -> Element msg -> Eleme
 replaceChildListConditional le test =
   case test of
     True -> replaceChildList le
-    False -> identity
+    False -> (\x -> x)
 
 
 {-| Replaces the current child list with a list of `Html` nodes
@@ -924,10 +950,11 @@ replaceNodeList ln =
 {-| Sets or resets the current child list from a keyed list of element records
 
 This is a performance optimization that will flag the rendering function to use
-[keyedNode] or [keyedNodeNS].
+[keyedNode] or [keyedNodeNS]. See [here] for details.
 
 [keyedNode]: https://package.elm-lang.org/packages/elm/virtual-dom/latest/VirtualDom#keyedNode
 [keyedNodeNS]: https://package.elm-lang.org/packages/elm/virtual-dom/latest/VirtualDom#keyedNodeNS
+[here]: https://guide.elm-lang.org/optimization/keyed.html
 
 -}
 setChildListWithKeys : List (String, Element msg) -> Element msg -> Element msg
@@ -946,10 +973,11 @@ setChildListWithKeys lkv =
 {-| Sets or resets the current child list from a keyed list of `Html` nodes
 
 This is a performance optimization that will flag the rendering function to use
-[keyedNode] or [keyedNodeNS].
+[keyedNode] or [keyedNodeNS]. See [here] for details.
 
 [keyedNode]: https://package.elm-lang.org/packages/elm/virtual-dom/latest/VirtualDom#keyedNode
 [keyedNodeNS]: https://package.elm-lang.org/packages/elm/virtual-dom/latest/VirtualDom#keyedNodeNS
+[here]: https://guide.elm-lang.org/optimization/keyed.html
 
 -}
 setNodeListWithKeys : List (String, VirtualDom.Node msg) -> Element msg -> Element msg

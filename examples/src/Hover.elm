@@ -4,6 +4,7 @@ module Hover exposing (main)
 import Browser
 import Html exposing (Html)
 import Html.Attributes as Attr
+import Html.Lazy as Lazy
 import Dom
 
 
@@ -42,8 +43,19 @@ update msg state =
 
 -- VIEW --
 
+-- An example of how to use the `Html.Lazy` optimization with this package
+
 view : State -> Html Toggle
 view state =
+  container
+    |> Dom.appendNode (state |> Lazy.lazy example)
+    |> Dom.render
+
+
+-- styled container element
+
+container : Dom.Element msg
+container =
   let
     heading =
       Dom.element "h1"
@@ -63,16 +75,12 @@ view state =
         [ ("maxWidth", "500px")
         , ("height", "450px")
         ]
-      |> Dom.appendChildList
-        [ heading
-        , example state
-        ]
-      |> Dom.render
+      |> Dom.appendChild heading
 
 
 -- main interactive component
 
-example : State -> Dom.Element Toggle
+example : State -> Html Toggle
 example state =
   let
     hoverCircle =
@@ -112,6 +120,7 @@ example state =
         [ hoverCircle
         , Dom.element "div" |> Dom.appendChild controller
         ]
+      |> Dom.render
 
 
 -- simple reusable components
