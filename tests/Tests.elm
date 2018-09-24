@@ -10,6 +10,8 @@ import VirtualDom
 import Html
 import Html.Attributes as Attr
 import Html.Events as Event
+import Html.Keyed as Keyed
+import Json.Decode
 
 
 -- HELPERS --
@@ -36,9 +38,20 @@ testString2 = "xyz678"
 testString3 = "quv999"
 testString4 = "rst555"
 
+
 type TestMsg
   = DoSomething
-  | CaptureInput String
+  | CaptureString String
+  | CaptureInt (Maybe Int)
+  | CaptureBool Bool
+
+
+testDecoder : (String -> TestMsg) -> Json.Decode.Decoder TestMsg
+testDecoder token =
+  Json.Decode.string
+    |> Json.Decode.at ["target", "id"]
+    |> Json.Decode.map token
+
 
 -- TESTS --
 
@@ -51,7 +64,10 @@ suite =
   , nodeEquality
     |> describe "Do comparisons of VirtualDom nodes give the expected results?"
 
-  , [ id
+  , [ tag
+      |> describe "Do updates to the `tag` field give the expected results?"
+
+    , id
       |> describe "Do updates to the `id` field give the expected results?"
 
     , classes
@@ -62,6 +78,21 @@ suite =
 
     , listeners
       |> describe "Do updates to the `listeners` field give the expected results?"
+
+    , attributes
+      |> describe "Do updates to the `attributes` field give the expected results?"
+
+    , text
+      |> describe "Do updates to the `text` field give the expected results?"
+
+    , children
+      |> describe "Do updates to the `children` field give the expected results?"
+
+    , namespace
+      |> describe "Do updates to the `namespace` field give the expected results?"
+
+    , keys
+      |> describe "Do updates to the `keys` field give the expected results?"
 
     ]
       |> describe "Do `Element` record update functions give the expected results?"
@@ -164,6 +195,19 @@ nodeEquality =
         |> Expect.notEqual (Html.div [] [ Html.p [] [ Html.span [] [ Html.text "something" ] ] ])
     )
       |> test "Records containing equivalent child nodes with diverging descendant trees should not be equal"
+
+  ]
+
+
+tag : List Test
+tag =
+  [ ( \() ->
+      Dom.element "div"
+        |> Dom.setTag "span"
+        |> Dom.render
+        |> Expect.equal (Html.span [] [])
+    )
+      |> test "Dom.setTag"
 
   ]
 
@@ -354,14 +398,572 @@ listeners =
     )
       |> test "Dom.addActionConditional: condition is False"
 
+  -- Using List.length because Elm compiler won't evaluate comparison on functions
   , ( \() ->
       Dom.element "div"
-        |> Dom.addInputHandler CaptureInput
+        |> Dom.addInputHandler CaptureString
         |> Dom.getData >> .listeners
-        |> List.map (\(k, v) -> VirtualDom.on k v)
-        |> Debug.toString
-        |> Expect.equal ([Event.onInput CaptureInput] |> Debug.toString)
+        |> List.length
+        |> Expect.equal 1
     )
       |> test "Dom.addInputHandler"
+
+  -- Using List.length because Elm compiler won't evaluate comparison on functions
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.addInputHandlerWithParser (CaptureInt, String.toInt)
+        |> Dom.getData >> .listeners
+        |> List.length
+        |> Expect.equal 1
+    )
+      |> test "Dom.addInputHandlerWithParser"
+
+  -- Using List.length because Elm compiler won't evaluate comparison on functions
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.addChangeHandler CaptureString
+        |> Dom.getData >> .listeners
+        |> List.length
+        |> Expect.equal 1
+    )
+      |> test "Dom.addChangeHandler"
+
+    -- Using List.length because Elm compiler won't evaluate comparison on functions
+    , ( \() ->
+        Dom.element "div"
+          |> Dom.addChangeHandlerWithParser (CaptureInt, String.toInt)
+          |> Dom.getData >> .listeners
+          |> List.length
+          |> Expect.equal 1
+      )
+        |> test "Dom.addChangeHandlerWithParser"
+
+    -- Using List.length because Elm compiler won't evaluate comparison on functions
+    , ( \() ->
+        Dom.element "div"
+          |> Dom.addToggleHandler CaptureBool
+          |> Dom.getData >> .listeners
+          |> List.length
+          |> Expect.equal 1
+      )
+        |> test "Dom.addToggleHandler"
+
+    -- Using List.length because Elm compiler won't evaluate comparison on functions
+    , ( \() ->
+        Dom.element "div"
+          |> Dom.addListener ("mouseover", testDecoder CaptureString)
+          |> Dom.getData >> .listeners
+          |> List.length
+          |> Expect.equal 1
+      )
+        |> test "Dom.addListener"
+
+    -- Using List.length because Elm compiler won't evaluate comparison on functions
+    , ( \() ->
+        Dom.element "div"
+          |> Dom.addListenerConditional ("mouseover", testDecoder CaptureString) True
+          |> Dom.getData >> .listeners
+          |> List.length
+          |> Expect.equal 1
+      )
+        |> test "Dom.addListener: condition is True"
+
+    -- Using List.length because Elm compiler won't evaluate comparison on functions
+    , ( \() ->
+        Dom.element "div"
+          |> Dom.addListenerConditional ("mouseover", testDecoder CaptureString) False
+          |> Dom.getData >> .listeners
+          |> List.length
+          |> Expect.equal 0
+      )
+        |> test "Dom.addListener: condition is False"
+
+    -- Using List.length because Elm compiler won't evaluate comparison on functions
+    , ( \() ->
+        Dom.element "div"
+          |> Dom.addListenerStopPropagation ("mouseover", testDecoder CaptureString)
+          |> Dom.getData >> .listeners
+          |> List.length
+          |> Expect.equal 1
+      )
+        |> test "Dom.addListenerStopPropagation"
+
+    -- Using List.length because Elm compiler won't evaluate comparison on functions
+    , ( \() ->
+        Dom.element "div"
+          |> Dom.addListenerPreventDefault ("mouseover", testDecoder CaptureString)
+          |> Dom.getData >> .listeners
+          |> List.length
+          |> Expect.equal 1
+      )
+        |> test "Dom.addListenerPreventDefault"
+
+    -- Using List.length because Elm compiler won't evaluate comparison on functions
+    , ( \() ->
+        Dom.element "div"
+          |> Dom.addListenerStopAndPrevent ("mouseover", testDecoder CaptureString)
+          |> Dom.getData >> .listeners
+          |> List.length
+          |> Expect.equal 1
+      )
+        |> test "Dom.addListenerStopAndPrevent"
+
+    , ( \() ->
+        Dom.element "div"
+          |> Dom.addAction ("click", DoSomething)
+          |> Dom.addListener ("mouseover", testDecoder CaptureString)
+          |> Dom.removeListener "mouseover"
+          |> Dom.render
+          |> Expect.equal (Html.div [Event.onClick DoSomething] [])
+      )
+        |> test "Dom.removeListener"
+
+  ]
+
+
+attributes : List Test
+attributes =
+  [ ( \() ->
+      Dom.element "div"
+        |> Dom.addAttribute (Attr.name testString1)
+        |> Dom.render
+        |> Expect.equal (Html.div [Attr.name testString1] [])
+    )
+      |> test "Dom.addAttribute"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.addAttribute (Attr.name testString1)
+        |> Dom.addAttributeConditional (Attr.title testString2) True
+        |> Dom.render
+        |> Expect.equal (Html.div [Attr.name testString1, Attr.title testString2] [])
+    )
+      |> test "Dom.addAttributeConditional: condition is True"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.addAttribute (Attr.name testString1)
+        |> Dom.addAttributeConditional (Attr.title testString2) False
+        |> Dom.render
+        |> Expect.equal (Html.div [Attr.name testString1] [])
+    )
+      |> test "Dom.addAttributeConditional: condition is False"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.addAttributeList
+          [ Attr.name testString1
+          , Attr.title testString2
+          ]
+        |> Dom.render
+        |> Expect.equal (Html.div [Attr.name testString1, Attr.title testString2] [])
+    )
+      |> test "Dom.addAttributeList"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.addAttributeListConditional
+          [ Attr.name testString1
+          , Attr.title testString2
+          ]
+          True
+        |> Dom.render
+        |> Expect.equal (Html.div [Attr.name testString1, Attr.title testString2] [])
+    )
+      |> test "Dom.addAttributeListConditional: condition is True"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.addAttributeListConditional
+          [ Attr.name testString1
+          , Attr.title testString2
+          ]
+          False
+        |> Dom.render
+        |> Expect.equal (Html.div [] [])
+    )
+      |> test "Dom.addAttributeListConditional: condition is False"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.addAttributeList
+          [ Attr.name testString1
+          , Attr.title testString2
+          ]
+        |> Dom.replaceAttributeList
+          [ Attr.name testString3
+          , Attr.title testString4
+          ]
+        |> Dom.render
+        |> Expect.equal (Html.div [Attr.name testString3, Attr.title testString4] [])
+    )
+      |> test "Dom.replaceAttributeList"
+
+  ]
+
+
+text : List Test
+text =
+  [ ( \() ->
+      Dom.element "div"
+        |> Dom.appendText testString1
+        |> Dom.appendText testString2
+        |> Dom.render
+        |> Expect.equal (Html.div [] [Html.text (testString1 ++ testString2)])
+    )
+      |> test "Dom.appendText"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.appendText testString1
+        |> Dom.appendTextConditional testString2 True
+        |> Dom.render
+        |> Expect.equal (Html.div [] [Html.text (testString1 ++ testString2)])
+    )
+      |> test "Dom.appendTextConditional: condition is True"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.appendText testString1
+        |> Dom.appendTextConditional testString2 False
+        |> Dom.render
+        |> Expect.equal (Html.div [] [Html.text testString1])
+    )
+      |> test "Dom.appendTextConditional: condition is False"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.appendText testString2
+        |> Dom.prependText testString1
+        |> Dom.render
+        |> Expect.equal (Html.div [] [Html.text (testString1 ++ testString2)])
+    )
+      |> test "Dom.prependText"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.appendText testString2
+        |> Dom.prependTextConditional testString1 True
+        |> Dom.render
+        |> Expect.equal (Html.div [] [Html.text (testString1 ++ testString2)])
+    )
+      |> test "Dom.prependTextConditional: condition is True"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.appendText testString2
+        |> Dom.prependTextConditional testString1 False
+        |> Dom.render
+        |> Expect.equal (Html.div [] [Html.text testString2])
+    )
+      |> test "Dom.prependTextConditional: condition is False"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.appendText testString1
+        |> Dom.replaceText testString2
+        |> Dom.render
+        |> Expect.equal (Html.div [] [Html.text testString2])
+    )
+      |> test "Dom.replaceText"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.appendText testString1
+        |> Dom.replaceTextConditional testString2 True
+        |> Dom.render
+        |> Expect.equal (Html.div [] [Html.text testString2])
+    )
+      |> test "Dom.replaceTextConditional: condition is True"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.appendText testString1
+        |> Dom.replaceTextConditional testString2 False
+        |> Dom.render
+        |> Expect.equal (Html.div [] [Html.text testString1])
+    )
+      |> test "Dom.replaceTextConditional: condition is False"
+
+  ]
+
+
+children : List Test
+children =
+  [ ( \() ->
+      Dom.element "div"
+        |> Dom.appendChild (Dom.element "p")
+        |> Dom.appendChild (Dom.element "span")
+        |> Dom.render
+        |> Expect.equal (Html.div [] [Html.p [] [], Html.span [] []])
+    )
+      |> test "Dom.appendChild"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.appendChild (Dom.element "p")
+        |> Dom.appendChildConditional (Dom.element "span") True
+        |> Dom.render
+        |> Expect.equal (Html.div [] [Html.p [] [], Html.span [] []])
+    )
+      |> test "Dom.appendChildConditional: condition is True"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.appendChild (Dom.element "p")
+        |> Dom.appendChildConditional (Dom.element "span") False
+        |> Dom.render
+        |> Expect.equal (Html.div [] [Html.p [] []])
+    )
+      |> test "Dom.appendChildConditional: condition is False"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.appendChild (Dom.element "p")
+        |> Dom.appendNode (Html.span [] [])
+        |> Dom.render
+        |> Expect.equal (Html.div [] [Html.p [] [], Html.span [] []])
+    )
+      |> test "Dom.appendNode"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.appendChild (Dom.element "button")
+        |> Dom.appendChildList
+          [ Dom.element "p"
+          , Dom.element "span"
+          ]
+        |> Dom.render
+        |> Expect.equal (Html.div [] [Html.button [] [], Html.p [] [], Html.span [] []])
+    )
+      |> test "Dom.appendChildList"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.appendChild (Dom.element "button")
+        |> Dom.appendChildListConditional
+          [ Dom.element "p"
+          , Dom.element "span"
+          ]
+          True
+        |> Dom.render
+        |> Expect.equal (Html.div [] [Html.button [] [], Html.p [] [], Html.span [] []])
+    )
+      |> test "Dom.appendChildListConditional: Condition is True"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.appendChild (Dom.element "button")
+        |> Dom.appendChildListConditional
+          [ Dom.element "p"
+          , Dom.element "span"
+          ]
+          False
+        |> Dom.render
+        |> Expect.equal (Html.div [] [Html.button [] []])
+    )
+      |> test "Dom.appendChildListConditional: Condition is False"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.appendChild (Dom.element "button")
+        |> Dom.appendNodeList
+          [ Html.p [] []
+          , Html.span [] []
+          ]
+        |> Dom.render
+        |> Expect.equal (Html.div [] [Html.button [] [], Html.p [] [], Html.span [] []])
+    )
+      |> test "Dom.appendNodeList"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.appendChild (Dom.element "p")
+        |> Dom.prependChild (Dom.element "span")
+        |> Dom.render
+        |> Expect.equal (Html.div [] [Html.span [] [], Html.p [] []])
+    )
+      |> test "Dom.prependChild"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.appendChild (Dom.element "p")
+        |> Dom.prependChildConditional (Dom.element "span") True
+        |> Dom.render
+        |> Expect.equal (Html.div [] [Html.span [] [], Html.p [] []])
+    )
+      |> test "Dom.prependChildConditional: condition is True"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.appendChild (Dom.element "p")
+        |> Dom.prependChildConditional (Dom.element "span") False
+        |> Dom.render
+        |> Expect.equal (Html.div [] [Html.p [] []])
+    )
+      |> test "Dom.prependChildConditional: condition is False"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.appendChild (Dom.element "p")
+        |> Dom.prependNode (Html.span [] [])
+        |> Dom.render
+        |> Expect.equal (Html.div [] [Html.span [] [], Html.p [] []])
+    )
+      |> test "Dom.prependNode"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.appendChild (Dom.element "button")
+        |> Dom.prependChildList
+          [ Dom.element "p"
+          , Dom.element "span"
+          ]
+        |> Dom.render
+        |> Expect.equal (Html.div [] [Html.p [] [], Html.span [] [], Html.button [] []])
+    )
+      |> test "Dom.prependChildList"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.appendChild (Dom.element "button")
+        |> Dom.prependChildListConditional
+          [ Dom.element "p"
+          , Dom.element "span"
+          ]
+          True
+        |> Dom.render
+        |> Expect.equal (Html.div [] [Html.p [] [], Html.span [] [], Html.button [] []])
+    )
+      |> test "Dom.prependChildListConditional: Condition is True"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.appendChild (Dom.element "button")
+        |> Dom.prependChildListConditional
+          [ Dom.element "p"
+          , Dom.element "span"
+          ]
+          False
+        |> Dom.render
+        |> Expect.equal (Html.div [] [Html.button [] []])
+    )
+      |> test "Dom.prependChildListConditional: Condition is False"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.appendChild (Dom.element "button")
+        |> Dom.prependNodeList
+          [ Html.p [] []
+          , Html.span [] []
+          ]
+        |> Dom.render
+        |> Expect.equal (Html.div [] [Html.p [] [], Html.span [] [], Html.button [] []])
+    )
+      |> test "Dom.prependNodeList"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.appendChild (Dom.element "button")
+        |> Dom.replaceChildList
+          [ Dom.element "p"
+          , Dom.element "span"
+          ]
+        |> Dom.render
+        |> Expect.equal (Html.div [] [Html.p [] [], Html.span [] []])
+    )
+      |> test "Dom.replaceChildList"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.appendChild (Dom.element "button")
+        |> Dom.replaceChildListConditional
+          [ Dom.element "p"
+          , Dom.element "span"
+          ]
+          True
+        |> Dom.render
+        |> Expect.equal (Html.div [] [Html.p [] [], Html.span [] []])
+    )
+      |> test "Dom.replaceChildListConditional: condition is True"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.appendChild (Dom.element "button")
+        |> Dom.replaceChildListConditional
+          [ Dom.element "p"
+          , Dom.element "span"
+          ]
+          False
+        |> Dom.render
+        |> Expect.equal (Html.div [] [Html.button [] []])
+    )
+      |> test "Dom.replaceChildListConditional: condition is False"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.appendChild (Dom.element "button")
+        |> Dom.replaceNodeList
+          [ Html.p [] []
+          , Html.span [] []
+          ]
+        |> Dom.render
+        |> Expect.equal (Html.div [] [Html.p [] [], Html.span [] []])
+    )
+      |> test "Dom.replaceNodeList"
+
+  ]
+
+
+namespace : List Test
+namespace =
+  [ ( \() ->
+      Dom.element "div"
+        |> Dom.setNamespace testString1
+        |> Dom.render
+        |> Expect.equal (VirtualDom.nodeNS testString1 "div" [] [])
+    )
+      |> test "Dom.setNamespace"
+
+  ]
+
+
+keys : List Test
+keys =
+  [ ( \() ->
+      Dom.element "div"
+        |> Dom.setChildListWithKeys
+          [ (testString1, Dom.element "p")
+          , (testString2, Dom.element "span")
+          , (testString3, Dom.element "button")
+          ]
+        |> Dom.render
+        |> Expect.equal
+          ( Keyed.node "div" []
+            [ (testString1, Html.p [] [])
+            , (testString2, Html.span [] [])
+            , (testString3, Html.button [] [])
+            ]
+          )
+    )
+      |> test "Dom.setChildListWithKeys"
+
+  , ( \() ->
+      Dom.element "div"
+        |> Dom.setNodeListWithKeys
+          [ (testString1, Html.p [] [])
+          , (testString2, Html.span [] [])
+          , (testString3, Html.button [] [])
+          ]
+        |> Dom.render
+        |> Expect.equal
+          ( Keyed.node "div" []
+            [ (testString1, Html.p [] [])
+            , (testString2, Html.span [] [])
+            , (testString3, Html.button [] [])
+            ]
+          )
+    )
+      |> test "Dom.setNodeListWithKeys"
 
   ]
