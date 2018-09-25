@@ -25,35 +25,9 @@ type Click = Click
 
 view : Int -> Html Click
 view current =
-  container
+  container "Button.elm"
     |> Dom.appendChild (example current)
     |> Dom.render
-
-
--- styled container element
-
-container : Dom.Element msg
-container =
-  let
-    heading =
-      Dom.element "h1"
-        |> Dom.addClass "pb-3"
-        |> Dom.appendText "Button.elm"
-
-  in
-    Dom.element "div"
-      |> Dom.addClassList
-        [ "mx-auto"
-        , "my-4"
-        , "p-4"
-        , "border"
-        , "rounded"
-        ]
-      |> Dom.addStyleList
-        [ ("maxWidth", "500px")
-        , ("height", "450px")
-        ]
-      |> Dom.appendChild heading
 
 
 -- main interactive component
@@ -98,6 +72,30 @@ example current =
 
 
 -- simple reusable components
+
+container : String -> Dom.Element msg
+container title =
+  let
+    heading =
+      Dom.element "h1"
+        |> Dom.addClass "pb-3"
+        |> Dom.appendText title
+
+  in
+    Dom.element "div"
+      |> Dom.addClassList
+        [ "mx-auto"
+        , "my-4"
+        , "p-4"
+        , "border"
+        , "rounded"
+        ]
+      |> Dom.addStyleList
+        [ ("maxWidth", "500px")
+        , ("height", "550px")
+        ]
+      |> Dom.appendChild heading
+
 
 alert : String -> Dom.Element msg
 alert context =

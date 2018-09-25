@@ -4289,6 +4289,20 @@ function _Browser_load(url)
 		}
 	}));
 }
+var author$project$Parse$update = F2(
+	function (capture, current) {
+		if (capture.$ === 'ParseInt') {
+			var maybeInt = capture.a;
+			return _Utils_update(
+				current,
+				{_int: maybeInt});
+		} else {
+			var maybeFloat = capture.a;
+			return _Utils_update(
+				current,
+				{_float: maybeFloat});
+		}
+	});
 var author$project$Dom$Internal$Element = function (a) {
 	return {$: 'Element', a: a};
 };
@@ -4300,6 +4314,10 @@ var author$project$Dom$Internal$modify = F2(
 		var data = _n0.a;
 		return author$project$Dom$Internal$Element(
 			f(data));
+	});
+var elm$core$Basics$apR = F2(
+	function (x, f) {
+		return f(x);
 	});
 var elm$core$Basics$EQ = {$: 'EQ'};
 var elm$core$Basics$LT = {$: 'LT'};
@@ -4467,44 +4485,6 @@ var elm$core$List$append = F2(
 		} else {
 			return A3(elm$core$List$foldr, elm$core$List$cons, ys, xs);
 		}
-	});
-var author$project$Dom$addClass = function (s) {
-	return author$project$Dom$Internal$modify(
-		function (n) {
-			return _Utils_update(
-				n,
-				{
-					classes: A2(
-						elm$core$List$append,
-						n.classes,
-						_List_fromArray(
-							[s]))
-				});
-		});
-};
-var author$project$Dom$addClassList = function (ls) {
-	return author$project$Dom$Internal$modify(
-		function (n) {
-			return _Utils_update(
-				n,
-				{
-					classes: A2(elm$core$List$append, n.classes, ls)
-				});
-		});
-};
-var author$project$Dom$addStyleList = function (lkv) {
-	return author$project$Dom$Internal$modify(
-		function (n) {
-			return _Utils_update(
-				n,
-				{
-					styles: A2(elm$core$List$append, n.styles, lkv)
-				});
-		});
-};
-var elm$core$Basics$apR = F2(
-	function (x, f) {
-		return f(x);
 	});
 var elm$core$List$map = F2(
 	function (f, xs) {
@@ -5082,6 +5062,41 @@ var author$project$Dom$appendChild = function (e) {
 				});
 		});
 };
+var author$project$Dom$render = author$project$Dom$Internal$render;
+var author$project$Dom$addClass = function (s) {
+	return author$project$Dom$Internal$modify(
+		function (n) {
+			return _Utils_update(
+				n,
+				{
+					classes: A2(
+						elm$core$List$append,
+						n.classes,
+						_List_fromArray(
+							[s]))
+				});
+		});
+};
+var author$project$Dom$addClassList = function (ls) {
+	return author$project$Dom$Internal$modify(
+		function (n) {
+			return _Utils_update(
+				n,
+				{
+					classes: A2(elm$core$List$append, n.classes, ls)
+				});
+		});
+};
+var author$project$Dom$addStyleList = function (lkv) {
+	return author$project$Dom$Internal$modify(
+		function (n) {
+			return _Utils_update(
+				n,
+				{
+					styles: A2(elm$core$List$append, n.styles, lkv)
+				});
+		});
+};
 var elm$core$String$append = _String_append;
 var author$project$Dom$appendText = function (s) {
 	return author$project$Dom$Internal$modify(
@@ -5097,7 +5112,7 @@ var author$project$Dom$element = function (tag) {
 	return author$project$Dom$Internal$Element(
 		{attributes: _List_Nil, children: _List_Nil, classes: _List_Nil, id: '', keys: _List_Nil, listeners: _List_Nil, namespace: '', styles: _List_Nil, tag: tag, text: ''});
 };
-var author$project$Button$container = function (title) {
+var author$project$Parse$container = function (title) {
 	var heading = A2(
 		author$project$Dom$appendText,
 		title,
@@ -5121,69 +5136,45 @@ var author$project$Button$container = function (title) {
 					['mx-auto', 'my-4', 'p-4', 'border', 'rounded']),
 				author$project$Dom$element('div'))));
 };
-var author$project$Button$Click = {$: 'Click'};
-var author$project$Dom$addAttribute = function (a) {
-	return author$project$Dom$Internal$modify(
-		function (n) {
-			return _Utils_update(
-				n,
-				{
-					attributes: A2(
-						elm$core$List$append,
-						n.attributes,
+var elm$json$Json$Decode$field = _Json_decodeField;
+var elm$json$Json$Decode$at = F2(
+	function (fields, decoder) {
+		return A3(elm$core$List$foldr, elm$json$Json$Decode$field, decoder, fields);
+	});
+var elm$virtual_dom$VirtualDom$MayStopPropagation = function (a) {
+	return {$: 'MayStopPropagation', a: a};
+};
+var author$project$Dom$Internal$captureStopPropagation = F2(
+	function (_n0, token) {
+		var field = _n0.a;
+		var decoder = _n0.b;
+		return elm$virtual_dom$VirtualDom$MayStopPropagation(
+			A2(
+				elm$json$Json$Decode$map,
+				function (x) {
+					return _Utils_Tuple2(x, true);
+				},
+				A2(
+					elm$json$Json$Decode$map,
+					token,
+					A2(
+						elm$json$Json$Decode$at,
 						_List_fromArray(
-							[a]))
-				});
-		});
-};
-var elm$virtual_dom$VirtualDom$attribute = F2(
-	function (key, value) {
-		return A2(
-			_VirtualDom_attribute,
-			_VirtualDom_noOnOrFormAction(key),
-			_VirtualDom_noJavaScriptOrHtmlUri(value));
+							['target', field]),
+						decoder))));
 	});
-var elm$html$Html$Attributes$attribute = elm$virtual_dom$VirtualDom$attribute;
-var author$project$Button$alert = function (context) {
-	return A2(
-		author$project$Dom$addAttribute,
-		A2(elm$html$Html$Attributes$attribute, 'role', 'alert'),
-		A2(
-			author$project$Dom$addClassList,
-			_List_fromArray(
-				['alert', 'alert-' + context]),
-			author$project$Dom$element('div')));
-};
-var elm$html$Html$Attributes$stringProperty = F2(
-	function (key, string) {
-		return A2(
-			_VirtualDom_property,
-			key,
-			elm$json$Json$Encode$string(string));
-	});
-var elm$html$Html$Attributes$type_ = elm$html$Html$Attributes$stringProperty('type');
-var author$project$Button$button = function (context) {
-	return A2(
-		author$project$Dom$addAttribute,
-		elm$html$Html$Attributes$type_('button'),
-		A2(
-			author$project$Dom$addClassList,
-			_List_fromArray(
-				['btn', 'btn-' + context]),
-			author$project$Dom$element('button')));
-};
 var elm$core$Basics$composeR = F3(
 	function (f, g, x) {
 		return g(
 			f(x));
 	});
-var elm$virtual_dom$VirtualDom$Normal = function (a) {
-	return {$: 'Normal', a: a};
-};
-var author$project$Dom$addAction = function (_n0) {
-	var event = _n0.a;
-	var msg = _n0.b;
-	var handler = A2(elm$core$Basics$composeR, elm$json$Json$Decode$succeed, elm$virtual_dom$VirtualDom$Normal);
+var elm$json$Json$Decode$string = _Json_decodeString;
+var author$project$Dom$addInputHandlerWithParser = function (_n0) {
+	var token = _n0.a;
+	var parser = _n0.b;
+	var transform = A2(elm$core$Basics$composeR, parser, token);
+	var handler = author$project$Dom$Internal$captureStopPropagation(
+		_Utils_Tuple2('value', elm$json$Json$Decode$string));
 	return author$project$Dom$Internal$modify(
 		function (n) {
 			return _Utils_update(
@@ -5195,12 +5186,74 @@ var author$project$Dom$addAction = function (_n0) {
 						_List_fromArray(
 							[
 								_Utils_Tuple2(
-								event,
-								handler(msg))
+								'input',
+								handler(transform))
 							]))
 				});
 		});
 };
+var author$project$Dom$addStyle = function (kv) {
+	return author$project$Dom$Internal$modify(
+		function (n) {
+			return _Utils_update(
+				n,
+				{
+					styles: A2(
+						elm$core$List$append,
+						n.styles,
+						_List_fromArray(
+							[kv]))
+				});
+		});
+};
+var author$project$Parse$ParseFloat = function (a) {
+	return {$: 'ParseFloat', a: a};
+};
+var author$project$Parse$ParseInt = function (a) {
+	return {$: 'ParseInt', a: a};
+};
+var author$project$Dom$addAttributeList = function (la) {
+	return author$project$Dom$Internal$modify(
+		function (n) {
+			return _Utils_update(
+				n,
+				{
+					attributes: A2(elm$core$List$append, n.attributes, la)
+				});
+		});
+};
+var elm$html$Html$Attributes$stringProperty = F2(
+	function (key, string) {
+		return A2(
+			_VirtualDom_property,
+			key,
+			elm$json$Json$Encode$string(string));
+	});
+var elm$html$Html$Attributes$placeholder = elm$html$Html$Attributes$stringProperty('placeholder');
+var elm$html$Html$Attributes$type_ = elm$html$Html$Attributes$stringProperty('type');
+var author$project$Parse$inputField = function (placeholder) {
+	return A2(
+		author$project$Dom$addAttributeList,
+		_List_fromArray(
+			[
+				elm$html$Html$Attributes$type_('text'),
+				elm$html$Html$Attributes$placeholder(placeholder)
+			]),
+		A2(
+			author$project$Dom$addClass,
+			'form-control',
+			author$project$Dom$element('input')));
+};
+var author$project$Dom$addClassConditional = F2(
+	function (s, test) {
+		if (test) {
+			return author$project$Dom$addClass(s);
+		} else {
+			return function (x) {
+				return x;
+			};
+		}
+	});
 var author$project$Dom$appendChildList = function (le) {
 	var lr = A2(elm$core$List$map, author$project$Dom$Internal$render, le);
 	return author$project$Dom$Internal$modify(
@@ -5212,63 +5265,125 @@ var author$project$Dom$appendChildList = function (le) {
 				});
 		});
 };
-var author$project$Button$example = function (current) {
-	var counterText = A2(
-		elm$core$String$join,
-		' ',
-		_List_fromArray(
-			[
-				'Button has been clicked ',
-				elm$core$String$fromInt(current),
-				function () {
-				if (current === 1) {
-					return 'time';
-				} else {
-					return 'times';
-				}
-			}()
-			]));
-	var counter = A2(
-		author$project$Dom$appendText,
-		counterText,
-		author$project$Button$alert(
-			function () {
-				if (!current) {
-					return 'secondary';
-				} else {
-					return 'primary';
-				}
-			}()));
-	var clicker = A2(
-		author$project$Dom$appendText,
-		'Click Me!',
-		A2(
-			author$project$Dom$addAction,
-			_Utils_Tuple2('click', author$project$Button$Click),
-			author$project$Button$button('primary')));
+var elm$core$Basics$neq = _Utils_notEqual;
+var author$project$Parse$listGroup = function (items) {
+	var toGroupItem = function (_n0) {
+		var content = _n0.a;
+		var context = _n0.b;
+		return A2(
+			author$project$Dom$appendChild,
+			content,
+			A3(
+				author$project$Dom$addClassConditional,
+				'list-group-item-' + context,
+				context !== '',
+				A2(
+					author$project$Dom$addClass,
+					'list-group-item',
+					author$project$Dom$element('li'))));
+	};
 	return A2(
 		author$project$Dom$appendChildList,
+		A2(elm$core$List$map, toGroupItem, items),
+		A2(
+			author$project$Dom$addClass,
+			'list-group',
+			author$project$Dom$element('ul')));
+};
+var elm$core$Debug$toString = _Debug_toString;
+var elm$core$String$toFloat = _String_toFloat;
+var elm$core$String$toInt = _String_toInt;
+var author$project$Parse$example = function (value) {
+	var outputText = function (string) {
+		return A2(
+			author$project$Dom$appendText,
+			string,
+			A2(
+				author$project$Dom$addStyle,
+				_Utils_Tuple2('height', '1.5rem'),
+				A2(
+					author$project$Dom$addClass,
+					'my-0',
+					author$project$Dom$element('p'))));
+	};
+	var labelText = function (string) {
+		return A2(
+			author$project$Dom$appendText,
+			string,
+			A2(
+				author$project$Dom$addStyleList,
+				_List_fromArray(
+					[
+						_Utils_Tuple2('line-height', '1em'),
+						_Utils_Tuple2('min-height', '1em')
+					]),
+				A2(
+					author$project$Dom$addClass,
+					'my-0',
+					author$project$Dom$element('p'))));
+	};
+	var intInput = A2(
+		author$project$Dom$appendChild,
+		A2(
+			author$project$Dom$addInputHandlerWithParser,
+			_Utils_Tuple2(author$project$Parse$ParseInt, elm$core$String$toInt),
+			A2(
+				author$project$Dom$addClass,
+				'my-3',
+				author$project$Parse$inputField('enter an integer'))),
+		author$project$Dom$element('div'));
+	var floatInput = A2(
+		author$project$Dom$appendChild,
+		A2(
+			author$project$Dom$addInputHandlerWithParser,
+			_Utils_Tuple2(author$project$Parse$ParseFloat, elm$core$String$toFloat),
+			A2(
+				author$project$Dom$addClass,
+				'my-3',
+				author$project$Parse$inputField('enter any number'))),
+		author$project$Dom$element('div'));
+	var contextClass = function (maybeInt) {
+		if (maybeInt.$ === 'Nothing') {
+			return 'secondary';
+		} else {
+			return 'success';
+		}
+	};
+	var groupedFields = author$project$Parse$listGroup(
 		_List_fromArray(
 			[
-				counter,
-				A2(
-				author$project$Dom$appendChild,
-				clicker,
-				author$project$Dom$element('div'))
-			]),
+				_Utils_Tuple2(intInput, ''),
+				_Utils_Tuple2(
+				labelText('Parsing with String.toInt:'),
+				'dark'),
+				_Utils_Tuple2(
+				outputText(
+					elm$core$Debug$toString(value._int)),
+				contextClass(value._int)),
+				_Utils_Tuple2(floatInput, ''),
+				_Utils_Tuple2(
+				labelText('Parsing with String.toFloat:'),
+				'dark'),
+				_Utils_Tuple2(
+				outputText(
+					elm$core$Debug$toString(value._float)),
+				contextClass(value._float))
+			]));
+	return A2(
+		author$project$Dom$appendChild,
+		groupedFields,
 		A2(
 			author$project$Dom$addClassList,
 			_List_fromArray(
-				['p-5', 'text-center', 'bg-light', 'rounded']),
+				['p-4', 'text-center', 'bg-light', 'rounded']),
 			author$project$Dom$element('div')));
 };
-var author$project$Dom$render = author$project$Dom$Internal$render;
-var author$project$Button$view = function (current) {
+var author$project$Parse$view = function (value) {
 	return author$project$Dom$render(
 		A2(
 			author$project$Dom$appendChild,
-			author$project$Button$example(current),
-			author$project$Button$container('Button.elm')));
+			author$project$Parse$example(value),
+			author$project$Parse$container('Parse.elm')));
 };
 var elm$core$Platform$Cmd$batch = _Platform_batch;
 var elm$core$Platform$Cmd$none = elm$core$Platform$Cmd$batch(_List_Nil);
@@ -5393,7 +5508,6 @@ var elm$core$String$left = F2(
 		return (n < 1) ? '' : A3(elm$core$String$slice, 0, n, string);
 	});
 var elm$core$String$contains = _String_contains;
-var elm$core$String$toInt = _String_toInt;
 var elm$url$Url$Url = F6(
 	function (protocol, host, port_, path, query, fragment) {
 		return {fragment: fragment, host: host, path: path, port_: port_, protocol: protocol, query: query};
@@ -5518,14 +5632,11 @@ var elm$browser$Browser$sandbox = function (impl) {
 			view: impl.view
 		});
 };
-var author$project$Button$main = elm$browser$Browser$sandbox(
+var author$project$Parse$main = elm$browser$Browser$sandbox(
 	{
-		init: 0,
-		update: F2(
-			function (click, count) {
-				return count + 1;
-			}),
-		view: author$project$Button$view
+		init: {_float: elm$core$Maybe$Nothing, _int: elm$core$Maybe$Nothing},
+		update: author$project$Parse$update,
+		view: author$project$Parse$view
 	});
-_Platform_export({'Button':{'init':author$project$Button$main(
+_Platform_export({'Parse':{'init':author$project$Parse$main(
 	elm$json$Json$Decode$succeed(_Utils_Tuple0))(0)}});}(this));

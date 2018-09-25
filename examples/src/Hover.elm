@@ -35,8 +35,8 @@ type Toggle
 -- UPDATE --
 
 update : Toggle -> State -> State
-update msg state =
-  case msg of
+update toggle state =
+  case toggle of
     Listen -> { state | listening = not state.listening }
     Hover -> { state | hovering = not state.hovering }
 
@@ -47,35 +47,9 @@ update msg state =
 
 view : State -> Html Toggle
 view state =
-  container
+  container "Hover.elm"
     |> Dom.appendNode (state |> Lazy.lazy example)
     |> Dom.render
-
-
--- styled container element
-
-container : Dom.Element msg
-container =
-  let
-    heading =
-      Dom.element "h1"
-        |> Dom.addClass "pb-3"
-        |> Dom.appendText "Hover.elm"
-
-  in
-    Dom.element "div"
-      |> Dom.addClassList
-        [ "mx-auto"
-        , "my-4"
-        , "p-4"
-        , "border"
-        , "rounded"
-        ]
-      |> Dom.addStyleList
-        [ ("maxWidth", "500px")
-        , ("height", "450px")
-        ]
-      |> Dom.appendChild heading
 
 
 -- main interactive component
@@ -124,6 +98,30 @@ example state =
 
 
 -- simple reusable components
+
+container : String -> Dom.Element msg
+container title =
+  let
+    heading =
+      Dom.element "h1"
+        |> Dom.addClass "pb-3"
+        |> Dom.appendText title
+
+  in
+    Dom.element "div"
+      |> Dom.addClassList
+        [ "mx-auto"
+        , "my-4"
+        , "p-4"
+        , "border"
+        , "rounded"
+        ]
+      |> Dom.addStyleList
+        [ ("maxWidth", "500px")
+        , ("height", "550px")
+        ]
+      |> Dom.appendChild heading
+
 
 button : String -> Dom.Element msg
 button context =
